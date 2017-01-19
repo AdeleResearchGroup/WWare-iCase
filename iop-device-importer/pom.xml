@@ -1,0 +1,139 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+  
+	<!-- Project parent -->
+	<parent>
+		<groupId>fr.liglab.adele.icasa</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.2.7-SNAPSHOT</version>
+		<relativePath>../../../iCasa/project/parent/</relativePath>
+	</parent>
+	
+	<artifactId>iop-device-importer</artifactId>
+	<packaging>bundle</packaging>
+	<name>${productName} :: ${projectName} :: IOP Device Importer</name>
+	
+	<properties>
+		<fuchsia.version>0.0.5-SNAPSHOT</fuchsia.version>
+	</properties>
+	
+    <dependencies>
+    
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>context.api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>context.impl.helpers</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+    
+        <dependency>
+            <groupId>org.ow2.chameleon.fuchsia</groupId>
+            <artifactId>org.ow2.chameleon.fuchsia.core</artifactId>
+			<version>${fuchsia.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.ipojo.annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.cream</groupId>
+			<artifactId>cream.runtime.facilities</artifactId>
+		</dependency>
+		
+		<!--  dependency>
+           	<groupId>de.mannheim.wifo2</groupId>
+           	<artifactId>iop</artifactId>
+           	<version>1.0</version>
+		</dependency -->
+
+		<dependency>
+		    <groupId>org.jdom</groupId>
+		    <artifactId>jdom2</artifactId>
+		    <version>2.0.6</version>
+		    <scope>runtime</scope>
+		</dependency>
+
+    </dependencies>
+	
+	
+	<build>
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+               <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>
+                            ${project.artifactId}
+                        </Bundle-SymbolicName>
+                        <Embed-Dependency>
+                        	*;scope=compile|runtime;groupId=de.mannheim.wifo2|org.jdom
+                        </Embed-Dependency>
+                        <Embed-Directory>lib</Embed-Directory>
+                        <Private-Package>
+                        	fr.liglab.adele.iop.device.*,
+                        	de.mannheim.wifo2.*;-split-package:=merge-first
+                        </Private-Package>
+						<Import-Package>
+							!de.mannheim.wifo2.*,
+                        	!org.jdom.*,
+                        	*
+                        </Import-Package>                        
+                    </instructions>
+                </configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-ipojo-plugin</artifactId>
+				<dependencies>
+					<dependency>
+						<groupId>fr.liglab.adele.cream</groupId>
+						<artifactId>cream.ipojo.module</artifactId>
+						<version>${context.socm.version}</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<goals>
+							<goal>ipojo-bundle</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<dependencySourceExcludes>
+						<exclude>org.openhab.binding:*</exclude>
+					</dependencySourceExcludes>
+
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	
+</project>
