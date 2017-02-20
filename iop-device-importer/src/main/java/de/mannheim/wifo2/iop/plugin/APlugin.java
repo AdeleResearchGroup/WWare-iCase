@@ -50,7 +50,7 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 			String propertyFile)  {
 		mIsRunning = false;
 		
-		IDeviceID deviceID = new DeviceID("icasa",
+		IDeviceID deviceID = new DeviceID("ICasa_Node",
 				new Location("127.0.0.1:7676"));
 		mPluginID = new PluginID(name, deviceID);
 		

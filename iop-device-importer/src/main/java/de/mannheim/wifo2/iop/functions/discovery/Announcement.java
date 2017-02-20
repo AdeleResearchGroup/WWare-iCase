@@ -111,7 +111,7 @@ public class Announcement implements IAnnouncement, Runnable {
 	public void announce() {
 		IAnnouncementEvent event = 
 				new AnnouncementEvent(mSystemID, 
-						mSystemID.getDeviceID(), localService != null ? Collections.singletonList(localService) : null, -1);
+						mSystemID.getDeviceID(), localService != null ? Collections.singletonList(localService) : Collections.emptyList(), -1);
 		mConnectionManager.send(event);
 	}
 

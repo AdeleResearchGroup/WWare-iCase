@@ -46,6 +46,7 @@ import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.ILookupResponseEvent;
+import de.mannheim.wifo2.iop.eventing.event.essential.IRegistrationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupResponseEvent;
@@ -220,6 +221,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					}
 					break;
 				}
+				case IEvent.EVENT_DEVICE_REGISTRATION : {
+					System.out.println("Device regsitered "+event);
+					break;
+				}
 				}
 			}
 			else  {
@@ -287,7 +292,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mThread.start();
 		mIsRunning = true;
 		
-		rosePlugin = new APlugin("iCASA_Plugin", this, null);
+		rosePlugin = new APlugin("iCasa over IOP", this, null);
 		rosePlugin.start();
 
 		sourceServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
