@@ -13,49 +13,53 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package fr.liglab.adele.iop.device.proxies;
+package fr.liglab.adele.iop.device.proxies.icasa;
 
 import java.util.Collections;
 
-import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
+
+import fr.liglab.adele.cream.annotations.entity.ContextEntity;
+import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 import de.mannheim.wifo2.iop.service.functionality.Call;
 import de.mannheim.wifo2.iop.service.functionality.Parameter;
-import fr.liglab.adele.cream.annotations.behavior.Behavior;
-import fr.liglab.adele.cream.annotations.entity.ContextEntity;
+
+
 import fr.liglab.adele.icasa.device.GenericDevice;
 import fr.liglab.adele.icasa.device.light.BinaryLight;
-import fr.liglab.adele.icasa.helpers.location.provider.LocatedObjectBehaviorProvider;
-import fr.liglab.adele.icasa.location.LocatedObject;
-import fr.liglab.adele.iop.device.api.IOPController;
-import fr.liglab.adele.iop.device.api.IOPDevice;
+import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
+import fr.liglab.adele.iop.device.api.IOPService;
 
 
-@ContextEntity(services = {BinaryLight.class,IOPDevice.class})
+/**
+ * An proxy to an IOP XWare-based service implementing the BinaryLigth interface
+ * 
+ * @author vega
+ *
+ */
+@FunctionalExtender(contextServices = {GenericDevice.class,BinaryLight.class,IOPService.class})
+public class IOPBinaryLight implements GenericDevice, BinaryLight, IOPService {
 
-@Behavior(id="LocatedBehavior",spec = LocatedObject.class,implem = LocatedObjectBehaviorProvider.class)
 
-public class IOPLight implements  GenericDevice,  BinaryLight, IOPDevice  {
-
-	@Property(name=fr.liglab.adele.cream.model.ContextEntity.CONTEXT_ENTITY_ID)
-	private String proxyID;
-
-	/**
-     * STATES
+    /**
+     * State
      */
+	@ContextEntity.State.Field(service = GenericDevice.class,state = GenericDevice.DEVICE_SERIAL_NUMBER)
+    private String serialNumber;
+
+	@ContextEntity.State.Field(service=IOPService.class, state = IOPService.SERVICE_ID)
+    private IServiceID remoteServiceId;
+
     @ContextEntity.State.Field(service = BinaryLight.class,state = BinaryLight.BINARY_LIGHT_POWER_STATUS,directAccess=true, value="false")
     private boolean status;
 
-    @ContextEntity.State.Field(service = GenericDevice.class,state = GenericDevice.DEVICE_SERIAL_NUMBER)
-    private String serialNumber;
 
-    @ContextEntity.State.Field(service = IOPDevice.class,state = IOPDevice.SERVICE_ID)
-    private IServiceID remoteService;
     
     @Requires(optional=false, proxy=false)
-    private IOPController controller;
+    private IOPInvocationHandler iopInvocationHandler;
+
 
     @Override
     public String getSerialNumber() {
@@ -65,7 +69,7 @@ public class IOPLight implements  GenericDevice,  BinaryLight, IOPDevice  {
 
 	@Override
 	public boolean getPowerStatus() {
-		Boolean result = (Boolean) controller.invoke(remoteService, new Call("getPowerStatus", Collections.emptyList(), Boolean.class));
+		Boolean result = (Boolean) iopInvocationHandler.invoke(remoteServiceId, new Call("getPowerStatus", Collections.emptyList(), Boolean.class));
 		if (result != null) {
 			status = result.booleanValue();
 			
@@ -76,21 +80,21 @@ public class IOPLight implements  GenericDevice,  BinaryLight, IOPDevice  {
 
 	@Override
 	public void setPowerStatus(boolean status) {
-		controller.invoke(remoteService, new Call("setPowerStatus", Collections.singletonList(new Parameter("status", status)), null));
+		iopInvocationHandler.invoke(remoteServiceId, new Call("setPowerStatus", Collections.singletonList(new Parameter("status", status)), null));
 		status = false;
 	}
 
 
 	@Override
 	public void turnOff() {
-		controller.invoke(remoteService, new Call("turnOff", Collections.emptyList(), null));
+		iopInvocationHandler.invoke(remoteServiceId, new Call("turnOff", Collections.emptyList(), null));
 		status = false;
 	}
 
 
 	@Override
 	public void turnOn() {
-		controller.invoke(remoteService, new Call("turnOn", Collections.emptyList(), null));
+		iopInvocationHandler.invoke(remoteServiceId, new Call("turnOn", Collections.emptyList(), null));
 		status = true;
 	}
 

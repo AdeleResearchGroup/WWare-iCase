@@ -16,5 +16,6 @@
   <modules>
   	<module>iop-library-install</module>
   	<module>iop-device-importer</module>
+  	<module>iop-device-importer-icasa</module>
   </modules>
 </project>

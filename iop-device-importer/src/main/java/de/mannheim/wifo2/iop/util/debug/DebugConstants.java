@@ -19,8 +19,8 @@ public class DebugConstants {
 	public static final boolean COORDINATION = false;
 	public static final boolean OVERLAY_CONSTRUCTION = false;
 	public static final boolean ROUTING = false;
-	public static final boolean CONTEXT = true;
-	public static final boolean CTX_SIMULATION = true;
+	public static final boolean CONTEXT = false;
+	public static final boolean CTX_SIMULATION = false;
 	
 	public static final boolean EVALUATION = false;
 }

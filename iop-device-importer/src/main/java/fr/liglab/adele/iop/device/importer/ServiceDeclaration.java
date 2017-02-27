@@ -16,39 +16,38 @@
 package fr.liglab.adele.iop.device.importer;
 
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
+import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclarationBuilder;
 
-import de.mannheim.wifo2.iop.identifier.IServiceID;
+import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by aygalinc on 20/04/16.
  */
-public class IOPServiceDeclaration {
+public class ServiceDeclaration {
 
-    public final static String INTERFACE_ID = "iop.interface.id";
+    public final static String SERVICE_DESCRIPTION = "iop.service.description";
 
-    public final static String SERVICE_ID = "iop.service.id";
 
-    private final IServiceID zwaveServiceId;
+    private final IServiceDescription service;
 
-    private final List<String> zwaveInterfaceId;
     
-    @SuppressWarnings("unchecked")
-	public IOPServiceDeclaration(ImportDeclaration declaration){
+	public ServiceDeclaration(ImportDeclaration declaration){
         Map<String,Object> metadatas = declaration.getMetadata();
-
-        zwaveServiceId = (IServiceID)metadatas.get(SERVICE_ID);
-        zwaveInterfaceId = (List<String>)metadatas.get(INTERFACE_ID);
+        service = (IServiceDescription) metadatas.get(SERVICE_DESCRIPTION);
     }
 
-    public IServiceID getServiceId() {
-        return zwaveServiceId;
+    public IServiceDescription getService() {
+        return service;
     }
-    
-    public List<String> getInterfaceId() {
-        return zwaveInterfaceId;
+
+    public static ImportDeclaration from(IServiceDescription service) {
+    	
+    	return ImportDeclarationBuilder.empty()
+    			.key("scope").value("generic")
+    			.key(SERVICE_DESCRIPTION).value(service)
+    			.build();
     }
 
 

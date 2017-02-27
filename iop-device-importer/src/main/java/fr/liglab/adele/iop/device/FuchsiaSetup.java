@@ -31,8 +31,8 @@ public class FuchsiaSetup {
     Instance iopControllerImporter = instance().named("iopControllerImporter")
             .of("fr.liglab.adele.iop.device.importer.ControllerImporter");
 
-    		Instance iopDeviceImporter = instance().named("iopDeviceImporter")
-            .of("fr.liglab.adele.iop.device.importer.DeviceImporter");
+    		Instance iopDeviceImporter = instance().named("iopServiceImporter")
+            .of("fr.liglab.adele.iop.device.importer.ServiceImporter");
 
     Instance iopImporterLinker = instance()
             .of(FuchsiaConstants.DEFAULT_IMPORTATION_LINKER_FACTORY_NAME)
@@ -41,7 +41,7 @@ public class FuchsiaSetup {
 
     Instance iopDeviceImporterLinker = instance()
             .of(FuchsiaConstants.DEFAULT_IMPORTATION_LINKER_FACTORY_NAME)
-            .with(ImportationLinker.FILTER_IMPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.interface.id=*))")
-            .with(ImportationLinker.FILTER_IMPORTERSERVICE_PROPERTY).setto("(instance.name=iopDeviceImporter)");
+            .with(ImportationLinker.FILTER_IMPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.service.description=*))")
+            .with(ImportationLinker.FILTER_IMPORTERSERVICE_PROPERTY).setto("(instance.name=iopServiceImporter)");
 
 }

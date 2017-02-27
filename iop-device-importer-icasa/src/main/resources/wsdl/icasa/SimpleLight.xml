@@ -1,0 +1,30 @@
+<ChatService>
+	<message name="turnOn" maps="switchLightOn">
+	</message>
+	<message name="turnOff" maps="switchLightOff">
+
+	</message>
+	<message name="getPowerStatus" maps="getLightState">
+	</message>
+
+	<message name="getPowerStatusResponse" maps="getLightStateResponse">
+		<part name="result" maps="result" type="java.lang.Boolean"/>
+	</message>
+
+	<message name="setPowerStatus">
+		<part name="status"  type="java.lang.Boolean"/>
+	</message>
+
+	<interface name="fr.liglab.adele.icasa.device.light.BinaryLight" maps="SimpleLight">
+		<operation name="turnOn" maps="switchOn">
+			<input name="turnOn"/>
+		</operation>
+		<operation name="turnOff" maps="switchOff">
+			<input name="turnOff"/>
+		</operation>
+		<operation name="getPowerStatus" maps="getState">
+			<input name="getPowerStatus"/>
+			<output name="getPowerStatusResponse"/>
+		</operation>
+	</interface>
+</ChatService>

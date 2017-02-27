@@ -50,7 +50,7 @@ public class ControllerDeclaration {
     	Map<String, Object> metadata = importDeclaration.getMetadata();
 
         if (!MATCHING_DECLARATION_FILTER.matches(metadata)) {
-            throw new BinderException("Not enough information in the metadata to be used by the zwave importer");
+            throw new BinderException("Not enough information in the metadata to be used by the IOP Xware importer");
         }
         
         ControllerDeclaration declaration = new ControllerDeclaration();

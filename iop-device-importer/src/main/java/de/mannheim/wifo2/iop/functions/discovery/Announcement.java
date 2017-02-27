@@ -63,7 +63,7 @@ public class Announcement implements IAnnouncement, Runnable {
 	@Override
 	public void stop() {
 		mIsRunning = false;
-//		mThread = null;
+		mThread = null;
 	}
 	
 	@Override
@@ -76,12 +76,6 @@ public class Announcement implements IAnnouncement, Runnable {
 		else if (type == IEvent.EVENT_REGISTRATION) {
 			processRegistration((IRegistrationEvent)event);
 		}
-//		else if(type == IEvent.EVENT_DEVICE_DEREGISTRATION)  {
-//			DeviceDeregistrationEvent deregistrationEvent = 
-//					(DeviceDeregistrationEvent) event;
-//			
-//			mKnownSystems.remove(deregistrationEvent.getDeviceID());
-//		}
 	}
 
 	private void processRegistration(IRegistrationEvent event) {
@@ -118,8 +112,10 @@ public class Announcement implements IAnnouncement, Runnable {
 	@Override
 	public void processAnnouncement(IEvent event) {
 		IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
+		IDeviceID deviceID = (IDeviceID) announcementEvent.getEndpointID();
 		
 		//TODO or better enqueue announcement event?
+		mKnownSystems.addElement(deviceID);
 		
 		DeviceRegistrationEvent deviceRegistrationEvent = 
 				new DeviceRegistrationEvent(mSystemID, 
@@ -128,12 +124,10 @@ public class Announcement implements IAnnouncement, Runnable {
 		mQueue.enqueue(deviceRegistrationEvent);
 		
 //		if(!mKnownSystems.contains(announcementEvent.getEndpointID()))  {			
-			IDeviceID deviceID = (IDeviceID) announcementEvent.getEndpointID();
 			IMatchRequest request = new SimpleMatchRequest();
 			ILookupEvent lookupEvent = new LookupEvent(mSystemID, EventID.getInstance().getNextID(),
 					mSystemID.getDeviceID(), deviceID, request);
 			
-			mKnownSystems.addElement(deviceID);
 			
 			mConnectionManager.send(lookupEvent);	
 //		}

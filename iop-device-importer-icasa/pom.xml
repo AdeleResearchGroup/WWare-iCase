@@ -10,9 +10,9 @@
 		<relativePath>../../../iCasa/project/parent/</relativePath>
 	</parent>
 	
-	<artifactId>iop-device-importer</artifactId>
+	<artifactId>iop-device-importer-icasa</artifactId>
 	<packaging>bundle</packaging>
-	<name>${productName} :: ${projectName} :: IOP Device Importer</name>
+	<name>${productName} :: ${projectName} :: IOP Device Importer for iCasa services</name>
 	
 	<properties>
 		<fuchsia.version>0.0.5-SNAPSHOT</fuchsia.version>
@@ -22,16 +22,15 @@
     
 		<dependency>
 			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>context.impl.helpers</artifactId>
+			<artifactId>context.api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-    
-        <dependency>
-            <groupId>org.ow2.chameleon.fuchsia</groupId>
-            <artifactId>org.ow2.chameleon.fuchsia.core</artifactId>
-			<version>${fuchsia.version}</version>
-        </dependency>
 
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>iop-device-importer</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
         <dependency>
             <groupId>org.apache.felix</groupId>
@@ -51,16 +50,10 @@
 
 		<dependency>
 			<groupId>fr.liglab.adele.cream</groupId>
-			<artifactId>cream.runtime.facilities</artifactId>
+			<artifactId>cream.core</artifactId>
 		</dependency>
 		
-		<dependency>
-		    <groupId>org.jdom</groupId>
-		    <artifactId>jdom2</artifactId>
-		    <version>2.0.6</version>
-		    <scope>runtime</scope>
-		</dependency>
-
+	
     </dependencies>
 	
 	
@@ -76,20 +69,14 @@
                         <Bundle-SymbolicName>
                             ${project.artifactId}
                         </Bundle-SymbolicName>
-                        <Embed-Dependency>
-                        	*;scope=compile|runtime;groupId=de.mannheim.wifo2|org.jdom
-                        </Embed-Dependency>
-                        <Embed-Directory>lib</Embed-Directory>
-                        <Private-Package>
-                        	fr.liglab.adele.iop.device.*,
-                        	de.mannheim.wifo2.*;-split-package:=merge-first
+ 						<Fragment-Host>iop-device-importer</Fragment-Host>
+ 						<Private-Package>
+                        	fr.liglab.adele.iop.device.proxies.icasa
                         </Private-Package>
 						<Import-Package>
-							!de.mannheim.wifo2.*,
-                        	!org.jdom.*,
-                        	*
-                        </Import-Package>                        
-                    </instructions>
+							*
+						</Import-Package>
+	                </instructions>
                 </configuration>
 			</plugin>
 

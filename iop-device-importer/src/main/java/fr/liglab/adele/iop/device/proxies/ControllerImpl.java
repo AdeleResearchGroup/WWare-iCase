@@ -23,7 +23,12 @@ import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+import org.osgi.framework.BundleContext;
 
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -31,14 +36,13 @@ import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Unbind;
 import org.apache.felix.ipojo.annotations.Validate;
-import org.osgi.framework.BundleContext;
+
+import fr.liglab.adele.cream.annotations.entity.ContextEntity;
+
 import org.ow2.chameleon.fuchsia.core.component.AbstractDiscoveryComponent;
 import org.ow2.chameleon.fuchsia.core.component.DiscoveryIntrospection;
 import org.ow2.chameleon.fuchsia.core.component.DiscoveryService;
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
-import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclarationBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import de.mannheim.wifo2.iop.eventing.IEvent;
 import de.mannheim.wifo2.iop.eventing.event.EventID;
@@ -46,7 +50,6 @@ import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.ILookupResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IRegistrationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupResponseEvent;
@@ -68,17 +71,22 @@ import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 import de.mannheim.wifo2.iop.system.IEnqueue;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 import de.mannheim.wifo2.iop.util.datastructure.UniqueHashMap;
-import fr.liglab.adele.cream.annotations.entity.ContextEntity;
-import fr.liglab.adele.icasa.device.light.BinaryLight;
+
+
 import fr.liglab.adele.iop.device.api.IOPController;
-import fr.liglab.adele.iop.device.api.IOPDevice;
-import fr.liglab.adele.iop.device.importer.IOPServiceDeclaration;
+import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
+import fr.liglab.adele.iop.device.api.IOPLookupService;
+import fr.liglab.adele.iop.device.api.IOPService;
+
+import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
+import fr.liglab.adele.icasa.device.GenericDevice;
+//import fr.liglab.adele.icasa.device.light.BinaryLight;
 
 
-@ContextEntity(services = {IOPController.class,IOPController.class})
+@ContextEntity(services = {IOPController.class,IOPController.class,IOPLookupService.class, IOPInvocationHandler.class})
 @Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class })
 
-public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController,IEnqueue, Runnable   {
+public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController, IOPLookupService, IOPInvocationHandler, IEnqueue, Runnable   {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ControllerImpl.class);
 
@@ -97,22 +105,24 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	private Queue<IEvent> mQueue;
 	private boolean mIsRunning;
 
-	private UniqueHashMap<IServiceDescription,BinaryLight> exportedServices = new UniqueHashMap<>();
+	private UniqueHashMap<IServiceDescription,GenericDevice> exportedServices = new UniqueHashMap<>();
+	
 	private Map<Integer,IApplicationEvent> pendingInvocations = new ConcurrentHashMap<>();
 	private Map<Integer,Object> pendingResponses = new ConcurrentHashMap<>();
 
-	private FuchsiaThread fuchsiaThread ;
-	
+	private IOPServiceDeclarationManager serviceDeclarationsManager;
+
+/*
 	@Bind(id="binaryLights", proxy = false, optional = true, aggregate = true)
 	public void lightBound(BinaryLight light, Map<String,?> properties) {
 		
-		if (light instanceof IOPDevice)
+		if (light instanceof IOPService)
 			return;
 		
 		String contextId			= String.valueOf((Long) properties.get("service.id"));
 		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
 		
-		ICapability simpleLight		= new Capability("SimpleLight");
+		ICapability simpleLight		= new Capability(BinaryLight.class.getCanonicalName());
 		IServiceDescription service = new LocalService(serviceId,contextId, Collections.singletonList(simpleLight), Collections.emptyList());
 		
 		exportedServices.put(service, light);
@@ -122,7 +132,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	public void lightUnbound(BinaryLight light, Map<String,?> properties) {
 		exportedServices.removeByValue(light);
 	}
-
+*/
 	/**
 	 * Constructor
 	 */
@@ -147,8 +157,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				case IEvent.EVENT_LOOKUPRESPONSE: {
 					ILookupResponseEvent response = (ILookupResponseEvent) event;
 					for(IServiceDescription service : response.getServices()) {
-						if (fuchsiaThread != null) {
-							fuchsiaThread.createDeclaration(service.getId(), service.getCapabilities().stream().map(ICapability::getName).collect(Collectors.toList()));
+						if (serviceDeclarationsManager != null) {
+							serviceDeclarationsManager.createDeclaration(service);
 						}
 					}
 					break;
@@ -169,7 +179,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					IApplicationEvent invocation = (IApplicationEvent) event;
 					//incoming
 					if (rosePlugin != null && invocation.getSource().equals(rosePlugin.getID())) {
-						IServiceDescription serviceId = new LocalService((ILocalServiceID)invocation.getTargetID(),null, null, Collections.emptyList());
+/*						IServiceDescription serviceId = new LocalService((ILocalServiceID)invocation.getTargetID(),null, null, Collections.emptyList());
+						
 						BinaryLight light = exportedServices.getValue(serviceId);
 						if (light != null) {
 							if (invocation.getCall().getSignature().equalsIgnoreCase("turnOff")) {
@@ -191,7 +202,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 																			call );
 								rosePlugin.enqueue(responseEvent);								
 							}
-						}
+						}*/
 					}
 					//outgoing
 					else {
@@ -280,9 +291,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		LOG.debug("Starting IOP Controller");
 
-		fuchsiaThread = new FuchsiaThread();
-		fuchsiaThread.setDaemon(true);
-		fuchsiaThread.start();
+		serviceDeclarationsManager = new IOPServiceDeclarationManager();
+		serviceDeclarationsManager.start();
 
 		mIsRunning = false;
 		mQueue = new Queue<IEvent>();
@@ -308,8 +318,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mIsRunning = false;
 		rosePlugin.stop();
 		
-		fuchsiaThread.dispose();
-		fuchsiaThread = null;
+		serviceDeclarationsManager.dispose();
+		serviceDeclarationsManager = null;
 	}
 
 
@@ -321,22 +331,18 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	
 
 
-	private class FuchsiaThread extends Thread {
-		public FuchsiaThread() {
-			super("FuchsiaThread");
+	private class IOPServiceDeclarationManager extends Thread {
+		
+		public IOPServiceDeclarationManager() {
+			super("IOPServiceDeclarationManager");
+			setDaemon(true);
 		}
 		
-		private Map<IServiceID,ImportDeclaration> declarations = new HashMap<>();
+		private Map<IServiceID,ImportDeclaration> declarations 			= new HashMap<>();
 
-		private BlockingQueue<ImportDeclaration > pendingDeclarations = new LinkedBlockingQueue<>();
+		private BlockingQueue<ImportDeclaration > pendingDeclarations 	= new LinkedBlockingQueue<>();
 		
 				
-		public synchronized void dispose() {
-			declarations.clear();
-			declarations = null;
-			pendingDeclarations.clear();
-		}
-
 		@Override
 		public void run() {
 			while (declarations != null) {
@@ -351,21 +357,19 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			}
 		}
 
-		public final void createDeclaration(IServiceID serviceId, List<String> interfacesId) {
+		public final void createDeclaration(IServiceDescription service) {
 
-			if (declarations.containsKey(serviceId)) {
+			if (declarations.containsKey(service.getId())) {
 				return;
 			}
 			
-			ImportDeclaration declaration = ImportDeclarationBuilder.empty()
-					.key("scope").value("generic")
-					.key(IOPServiceDeclaration.SERVICE_ID).value(serviceId)
-					.key(IOPServiceDeclaration.INTERFACE_ID).value(interfacesId)
-					.build();
-
-			declarations.put(serviceId,declaration);
+			
 			try {
+			
+				ImportDeclaration declaration = ServiceDeclaration.from(service);
+				declarations.put(service.getId(),declaration);
 				pendingDeclarations.put(declaration);
+
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -379,7 +383,21 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			}
 		}
 		
+		public synchronized void dispose() {
+			declarations.clear();
+			declarations = null;
+			pendingDeclarations.clear();
+		}
 
+	}
+
+
+
+
+	@Override
+	public void lookup(String[] services) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
