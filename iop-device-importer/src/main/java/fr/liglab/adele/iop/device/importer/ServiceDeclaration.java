@@ -22,9 +22,6 @@ import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 
 import java.util.Map;
 
-/**
- * Created by aygalinc on 20/04/16.
- */
 public class ServiceDeclaration {
 
     public final static String SERVICE_DESCRIPTION = "iop.service.description";

@@ -198,8 +198,12 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 	
 	protected void initializeConnections(Hashtable<String, Object> properties)  {
 		IDeviceID deviceID = new DeviceID(IConnectionManager.ADVERTISEMENT, 
+				new Location(null, "224.12.0.8", 6565, null));
+		IConnection multicast = new MulticastGroup(mConnectionManager, "224.12.0.8", 6565);
+		/*
+		IDeviceID deviceID = new DeviceID(IConnectionManager.ADVERTISEMENT, 
 				new Location(null, "239.255.0.8", 6565, null));
-		IConnection multicast = new MulticastGroup(mConnectionManager, "239.255.0.8", 6565);
+		IConnection multicast = new MulticastGroup(mConnectionManager, "239.255.0.8", 6565);*/
 		mConnectionManager.addConnection(deviceID, multicast);
 		multicast.start();
 		

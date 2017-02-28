@@ -18,6 +18,7 @@ package fr.liglab.adele.iop.device;
 import org.apache.felix.ipojo.configuration.Configuration;
 import org.apache.felix.ipojo.configuration.Instance;
 import org.ow2.chameleon.fuchsia.core.FuchsiaConstants;
+import org.ow2.chameleon.fuchsia.core.component.ExportationLinker;
 import org.ow2.chameleon.fuchsia.core.component.ImportationLinker;
 import static org.apache.felix.ipojo.configuration.Instance.instance;
 
@@ -25,14 +26,17 @@ import static org.apache.felix.ipojo.configuration.Instance.instance;
 @Configuration
 public class FuchsiaSetup {
 
-	 Instance fileBasedDiscovery = instance()
+	Instance fileBasedDiscovery = instance()
 	            .of("org.ow2.chameleon.fuchsia.discovery.filebased.FileBasedDiscoveryImport");
 	 
     Instance iopControllerImporter = instance().named("iopControllerImporter")
             .of("fr.liglab.adele.iop.device.importer.ControllerImporter");
 
-    		Instance iopDeviceImporter = instance().named("iopServiceImporter")
+    Instance iopDeviceImporter = instance().named("iopServiceImporter")
             .of("fr.liglab.adele.iop.device.importer.ServiceImporter");
+
+    Instance iopDeviceExporter = instance().named("iopServiceExporter")
+            .of("fr.liglab.adele.iop.device.exporter.ServiceExporter");
 
     Instance iopImporterLinker = instance()
             .of(FuchsiaConstants.DEFAULT_IMPORTATION_LINKER_FACTORY_NAME)
@@ -44,4 +48,9 @@ public class FuchsiaSetup {
             .with(ImportationLinker.FILTER_IMPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.service.description=*))")
             .with(ImportationLinker.FILTER_IMPORTERSERVICE_PROPERTY).setto("(instance.name=iopServiceImporter)");
 
+    Instance iopDeviceExporterLinker = instance()
+            .of(FuchsiaConstants.DEFAULT_EXPORTATION_LINKER_FACTORY_NAME)
+            .with(ExportationLinker.FILTER_EXPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.exported.service.id=*)(iop.exported.service.capabilities=*))")
+            .with(ExportationLinker.FILTER_EXPORTERSERVICE_PROPERTY).setto("(instance.name=iopServiceExporter)");
+    
 }
