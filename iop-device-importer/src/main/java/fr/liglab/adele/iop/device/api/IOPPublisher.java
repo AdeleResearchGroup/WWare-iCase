@@ -7,7 +7,7 @@ import fr.liglab.adele.cream.annotations.ContextService;
 
 public @ContextService  interface IOPPublisher {
 
-	public void publish(String id, List<ICapability> capabilities, IOPInvocationHandler handler);
+	public void publish(String id, String componentName, List<ICapability> capabilities, IOPInvocationHandler handler);
 	
 	public void unpublish(String id);
 }

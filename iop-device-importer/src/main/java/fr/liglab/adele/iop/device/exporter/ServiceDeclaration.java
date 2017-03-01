@@ -25,7 +25,10 @@ import de.mannheim.wifo2.iop.service.model.ICapability;
 
 public class ServiceDeclaration {
 
+
     public final static String SERVICE 				= "iop.exported.service";
+
+    public final static String COMPONENT_ID			= "iop.exported.component.id";
 
     public final static String SERVICE_ID 			= "iop.exported.service.id";
 
@@ -33,6 +36,7 @@ public class ServiceDeclaration {
 
 
     private final String 			id;
+    private final String			componentId;
     private final List<ICapability> capabilities;
     private final Object			service;
     
@@ -40,12 +44,17 @@ public class ServiceDeclaration {
 	public ServiceDeclaration(ExportDeclaration declaration) {
         Map<String,Object> metadata = declaration.getMetadata();
         id 				= (String) metadata.get(SERVICE_ID);
+        componentId		= (String) metadata.get(COMPONENT_ID);
         service			= metadata.get(SERVICE);
         capabilities	= (List<ICapability>) metadata.get(SERVICE_CAPABILITIES);
     }
 
     public String getId() {
         return id;
+    }
+    
+    public String getComponentId() {
+    	return componentId;
     }
     
     public List<ICapability> getCapabilities() {
@@ -56,11 +65,12 @@ public class ServiceDeclaration {
     	return service;
     }
     
-    public static ExportDeclaration from(Object service, String id, List<ICapability> capabilities) {
+    public static ExportDeclaration from(Object service, String id, List<ICapability> capabilities, String componentId) {
     	
     	return ExportDeclarationBuilder.empty()
     			.key("scope").value("generic")
     			.key(SERVICE).value(service)
+    			.key(COMPONENT_ID).value(componentId)
     			.key(SERVICE_ID).value(id)
     			.key(SERVICE_CAPABILITIES).value(capabilities)
     			.build();
