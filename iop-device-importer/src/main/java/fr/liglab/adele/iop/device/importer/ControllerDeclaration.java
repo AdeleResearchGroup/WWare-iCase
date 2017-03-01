@@ -15,6 +15,10 @@
  */
 package fr.liglab.adele.iop.device.importer;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.osgi.framework.Filter;
 
 import org.ow2.chameleon.fuchsia.core.FuchsiaUtils;
@@ -23,23 +27,19 @@ import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
 import org.ow2.chameleon.fuchsia.core.exceptions.BinderException;
 import org.ow2.chameleon.fuchsia.core.exceptions.InvalidFilterException;
 
-import fr.liglab.adele.iop.device.api.IOPController;
-
-import java.util.Map;
 
 public class ControllerDeclaration {
 
     private final static Filter MATCHING_DECLARATION_FILTER = buildMatchFilter();
 
     private String id;
-    private String broadcast;
-    private int port;
+    private Map<String,Object> properties;
 
 
     private static Filter buildMatchFilter() {
     	
         try {
-        	return FuchsiaUtils.getFilter("(&(scope=generic)(protocol=iop)(broadcast.address=*)(broadcast.port=*))");
+        	return FuchsiaUtils.getFilter("(&(scope=generic)(protocol=iop)(SELF_ID=*)(SELF_LOCATION=*))");
         } catch (InvalidFilterException e) {
             throw new IllegalStateException(e);
         }
@@ -55,24 +55,60 @@ public class ControllerDeclaration {
         
         ControllerDeclaration declaration = new ControllerDeclaration();
 
-        declaration.id			= (String)  metadata.get("id");
-        declaration.broadcast	= (String) metadata.get(IOPController.BROADCAST_ADDRESS);
-        declaration.port		= Integer.valueOf( (String)metadata.get(IOPController.BROADCAST_PORT));
+        declaration.id			= (String) metadata.get("id");
+        declaration.properties	= loadProperties(metadata);
         
         return declaration;
     }
 
+    /**
+     * Loads the controller configuration from the metadata.
+     * 
+     * Controller configuration properties are identified because the value has the format
+     * string literal=class name
+     */
+    public static Map<String,Object> loadProperties(Map<String,Object> metadata) {
 
+    	
+    	Map<String, Object> result = new HashMap<>();
+		for (String key : metadata.keySet()) {
+			Object value = metadata.get(key);
+			
+			if (!(value instanceof String)) {
+				continue;
+			}
+			
+			String[] parts = ((String)value).split("=");
+			
+			if (parts.length != 2) {
+				continue;
+			}
+			
+			
+			try {
+				Class<?> c = Class.forName(parts[1]);
+				result.put(key, c.getConstructor(new Class[] {String.class})
+						.newInstance(parts[0]));
+			} catch (ClassNotFoundException | InstantiationException |
+						IllegalAccessException | IllegalArgumentException | InvocationTargetException |
+						NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+			}
+
+		}
+		
+		return result;
+
+    }
+    
     private ControllerDeclaration() {
     }
     
-    public String getBroadcast() {
-        return broadcast;
+    
+    public Map<String,Object> getProperties() {
+        return properties;
     }
     
-    public int getPort() {
-        return port;
-    }
     
     public String getId() {
     	return id;

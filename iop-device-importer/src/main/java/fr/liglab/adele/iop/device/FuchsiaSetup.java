@@ -40,7 +40,7 @@ public class FuchsiaSetup {
 
     Instance iopImporterLinker = instance()
             .of(FuchsiaConstants.DEFAULT_IMPORTATION_LINKER_FACTORY_NAME)
-            .with(ImportationLinker.FILTER_IMPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(protocol=iop)(broadcast.address=*))")
+            .with(ImportationLinker.FILTER_IMPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(protocol=iop)(SELF_ID=*)(SELF_LOCATION=*))")
             .with(ImportationLinker.FILTER_IMPORTERSERVICE_PROPERTY).setto("(instance.name=iopControllerImporter)");
 
     Instance iopDeviceImporterLinker = instance()

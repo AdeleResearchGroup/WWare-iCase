@@ -48,7 +48,7 @@ public class ControllerImporter extends AbstractImporterComponent  {
 	@ServiceProperty(name = Factory.INSTANCE_NAME_PROPERTY)
 	private String name;
 
-	@ServiceProperty(name = "target", value = "(&(scope=generic)(protocol=iop)(broadcast.address=*))")
+	@ServiceProperty(name = "target", value = "(&(scope=generic)(protocol=iop)(SELF_ID=*)(SELF_LOCATION=*))")
 	private String filter;
 
 
@@ -72,13 +72,11 @@ public class ControllerImporter extends AbstractImporterComponent  {
 
 		ControllerDeclaration declaration = ControllerDeclaration.from(importDeclaration);
 
-		LOG.info("Importing declaration for IOP device '{}' at port {}",declaration.getBroadcast(),declaration.getPort());
+		LOG.info("Importing declaration for IOP device '{}' ",declaration.getId());
 
 		Map<String,Object> properties= new HashMap<>();
 		
-		properties.put(ContextEntity.State.id(IOPController.class,IOPController.BROADCAST_ADDRESS),declaration.getBroadcast());
-		properties.put(ContextEntity.State.id(IOPController.class,IOPController.BROADCAST_PORT),declaration.getPort());
-		 
+		properties.put(ContextEntity.State.id(IOPController.class,IOPController.PROPERTIES),declaration.getProperties());
 		
 		iopControllerCreator.create(getInstanceId(declaration),properties);
 		handleImportDeclaration(importDeclaration);
@@ -90,7 +88,7 @@ public class ControllerImporter extends AbstractImporterComponent  {
 
 		ControllerDeclaration declaration = ControllerDeclaration.from(importDeclaration);
 
-		LOG.info("Removing declaration for IOP device '{}' at port {}",declaration.getBroadcast(),declaration.getPort());
+		LOG.info("Removing declaration for IOP device '{}'",declaration.getId());
 
 		iopControllerCreator.delete(getInstanceId(declaration));
 		unhandleImportDeclaration(importDeclaration);

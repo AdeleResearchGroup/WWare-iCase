@@ -87,12 +87,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	@Property(name=fr.liglab.adele.cream.model.ContextEntity.CONTEXT_ENTITY_ID)
 	private String contextId;
 
-	
-	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.BROADCAST_ADDRESS)
-	private String broadcast;
-
-	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.BROADCAST_PORT)
-	private int port;
+	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.PROPERTIES)
+	private Map<String,Object> properties;
 
 	private APlugin 			rosePlugin;
 	private Thread 				mThread;
@@ -190,7 +186,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mThread.start();
 		mIsRunning = true;
 		
-		rosePlugin = new APlugin("iCasa over IOP", this, null);
+		rosePlugin = new APlugin("iCasa over IOP", this, properties);
 		rosePlugin.start();
 
 		myServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);

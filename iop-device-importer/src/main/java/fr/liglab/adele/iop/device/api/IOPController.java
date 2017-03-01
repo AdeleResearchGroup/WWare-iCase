@@ -5,8 +5,6 @@ import fr.liglab.adele.cream.annotations.State;
 
 public @ContextService interface IOPController extends IOPLookupService, IOPInvocationHandler {
 
-    public static @State  String BROADCAST_PORT		="broadcast.port";
-
-    public static @State  String BROADCAST_ADDRESS	="broadcast.address";
+    public static @State  String PROPERTIES	="iop.controller.properties";
 	
 }

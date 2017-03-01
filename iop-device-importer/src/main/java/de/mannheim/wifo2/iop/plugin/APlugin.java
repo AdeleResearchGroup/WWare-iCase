@@ -1,6 +1,6 @@
 package de.mannheim.wifo2.iop.plugin;
 
-import java.util.Hashtable;
+import java.util.Map;
 
 import de.mannheim.wifo2.iop.connection.IConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
@@ -27,6 +27,7 @@ import de.mannheim.wifo2.iop.registry.DeviceRegistry;
 import de.mannheim.wifo2.iop.registry.IEndpointRegistry;
 import de.mannheim.wifo2.iop.system.IEnqueue;
 import de.mannheim.wifo2.iop.translation.MessageHandler;
+import de.mannheim.wifo2.iop.util.Constants;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
@@ -47,11 +48,11 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 	protected IInvocation mInvocation;
 	
 	public APlugin(String name, IEnqueue mediator, 
-			String propertyFile)  {
+			Map<String, Object> properties)  {
 		mIsRunning = false;
 		
-		IDeviceID deviceID = new DeviceID("ICasa_Node",
-				new Location("127.0.0.1:7676"));
+		IDeviceID deviceID = new DeviceID((String) properties.get(Constants.SELF_ID),
+				new Location((String) properties.get(Constants.SELF_LOCATION)));
 		mPluginID = new PluginID(name, deviceID);
 		
 		mMediator = mediator;
@@ -59,16 +60,16 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 		mEventDispatcher = new EventDispatcher();
 		mDeviceRegistry = new DeviceRegistry(mPluginID, this, mMediator);
 				
-		initializeConnectionManager(null);
+		initializeConnectionManager(properties);
 		
-		initializeAnnouncementFunction(null);
-		initializeLookupFunction(null);
-		initializeInvocationFunction(null);
-		initializeAdditionalFunctions(null);
+		initializeAnnouncementFunction(properties);
+		initializeLookupFunction(properties);
+		initializeInvocationFunction(properties);
+		initializeAdditionalFunctions(properties);
 		
 		initializeChannels();
 		
-		initializeConnections(null);
+		initializeConnections(properties);
 				
 		mThread = null;
 	}
@@ -154,19 +155,19 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 		}
 	}
 	
-	protected void initializeAnnouncementFunction(Hashtable<String, Object> properties)  {
-		mAnnouncement = new Announcement(mMediator, mPluginID, mMediator, mConnectionManager, 10000);
+	protected void initializeAnnouncementFunction(Map<String, Object> properties)  {
+		mAnnouncement = new Announcement(mMediator, mPluginID, mMediator, mConnectionManager, (int) properties.get(Constants.ADVERTISEMENT_PERIOD));
 	}
 	
-	protected void initializeLookupFunction(Hashtable<String, Object> properties)  {
+	protected void initializeLookupFunction(Map<String, Object> properties)  {
 		mLookup = new Lookup(mMediator, mPluginID, mMediator, mConnectionManager, null);
 	}
 		
-	protected void initializeInvocationFunction(Hashtable<String, Object> properties)  {
+	protected void initializeInvocationFunction(Map<String, Object> properties)  {
 		mInvocation = new Invocation(mMediator, mPluginID, mMediator, mConnectionManager);
 	}
 	
-	protected void initializeAdditionalFunctions(Hashtable<String, Object> properties)  {
+	protected void initializeAdditionalFunctions(Map<String, Object> properties)  {
 		
 	}
 	
@@ -192,24 +193,27 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 		}
 	}
 	
-	protected void initializeConnectionManager(Hashtable<String, Object> properties)  {
+	protected void initializeConnectionManager(Map<String, Object> properties)  {
 		mConnectionManager = new ConnectionManager(this, mPluginID, new MessageHandler(), TCPClientConnection.class);
 	}
 	
-	protected void initializeConnections(Hashtable<String, Object> properties)  {
+	protected void initializeConnections(Map<String, Object> properties)  {
+
+		String address = (String) properties.get(Constants.CONNECTION_ADVERTISEMENT_ADDRESS);
+		Integer port = (Integer) properties.get(Constants.CONNECTION_ADVERTISEMENT_PORT);
+		
 		IDeviceID deviceID = new DeviceID(IConnectionManager.ADVERTISEMENT, 
-				new Location(null, "224.12.0.8", 6565, null));
-		IConnection multicast = new MulticastGroup(mConnectionManager, "224.12.0.8", 6565);
-		/*
-		IDeviceID deviceID = new DeviceID(IConnectionManager.ADVERTISEMENT, 
-				new Location(null, "239.255.0.8", 6565, null));
-		IConnection multicast = new MulticastGroup(mConnectionManager, "239.255.0.8", 6565);*/
+				new Location(null, address, port, null));
+		IConnection multicast = new MulticastGroup(mConnectionManager, address, port);
+
 		mConnectionManager.addConnection(deviceID, multicast);
 		multicast.start();
 		
+		port = (Integer) properties.get(Constants.CONNECTION_SERVER_PORT);
+
 		IEndpointID deviceIDServer = new DeviceID(IConnectionManager.SERVER, 
-				new Location(null, "127.0.0.1", 7676, null));
-		IConnection server = new TCPServerConnection(mConnectionManager, TCPClientConnection.class, 7676);
+				new Location(null, "127.0.0.1", port, null));
+		IConnection server = new TCPServerConnection(mConnectionManager, TCPClientConnection.class, port);
 		mConnectionManager.addConnection(deviceIDServer, server);
 		server.start();
 		
