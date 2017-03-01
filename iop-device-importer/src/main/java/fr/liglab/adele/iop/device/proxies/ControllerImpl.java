@@ -17,8 +17,10 @@ package fr.liglab.adele.iop.device.proxies;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -101,7 +103,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	private Map<Integer,Object> pendingResponses 				= new ConcurrentHashMap<>();
 
 	private IOPServiceDeclarationManager importManager;
-	private Map<IServiceDescription,IOPInvocationHandler> exportedServices = new HashMap<>();
+	private Map<IServiceDescription,IOPInvocationHandler> exportedServices = new ConcurrentHashMap<>();
 
 
 	/**
@@ -151,10 +153,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	}	
 
 	@Override
-	public void publish(String id, List<ICapability> capabilities, IOPInvocationHandler handler) {
+	public void publish(String id, String componentName, List<ICapability> capabilities, IOPInvocationHandler handler) {
 
 		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
-		IServiceDescription service = new LocalService(serviceId, id, capabilities, Collections.emptyList());
+		IServiceDescription service = new LocalService(serviceId, componentName, capabilities, Collections.emptyList());
 		
 		exportedServices.put(service, handler);
 	}
@@ -222,11 +224,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				
 				switch(event.getType()) {
 				case IEvent.EVENT_LOOKUPRESPONSE: {
-					ILookupResponseEvent response = (ILookupResponseEvent) event;
-					for(IServiceDescription service : response.getServices()) {
-						if (importManager != null) {
-							importManager.createDeclaration(service);
-						}
+					if (importManager != null) {
+						importManager.dispatch((ILookupResponseEvent) event);
 					}
 					break;
 				}
@@ -320,7 +319,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			setDaemon(true);
 		}
 		
-		private Map<IServiceID,ImportDeclaration> declarations 			= new HashMap<>();
+		public void dispatch(ILookupResponseEvent event) {
+			updateDeclarations(event.getServices());
+		}
+
+		private Map<IServiceID,ImportDeclaration> declarations 			= new ConcurrentHashMap<>();
 
 		private BlockingQueue<ImportDeclaration > pendingDeclarations 	= new LinkedBlockingQueue<>();
 		
@@ -339,13 +342,35 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			}
 		}
 
-		public final void createDeclaration(IServiceDescription service) {
+		private final void updateDeclarations(List<? extends IServiceDescription> services) {
 
-			if (declarations.containsKey(service.getId())) {
-				return;
+			Set<IServiceID> unrenewedServices 			= new HashSet<>(declarations.keySet());
+			Set<IServiceDescription> discoveredServices	= new HashSet<>();
+			
+			synchronized (this) {
+				
+				for (IServiceDescription service : services) {
+					if (declarations.containsKey(service.getId())) {
+						unrenewedServices.remove(service.getId());
+					}
+					else {
+						discoveredServices.add(service);
+					}
+				}
+				
 			}
 			
+			for (IServiceDescription discovered : discoveredServices) {
+				createDeclaration(discovered);
+			}
 			
+			for (IServiceID unrenewed : unrenewedServices) {
+				removeDeclaration(unrenewed);
+			}
+		}
+		
+		private final void createDeclaration(IServiceDescription service) {
+
 			try {
 			
 				ImportDeclaration declaration = ServiceDeclaration.from(service);
@@ -357,7 +382,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			}
 		}
 
-		@SuppressWarnings("unused")
 		private final void removeDeclaration(IServiceID serviceId) {
 			ImportDeclaration declaration = declarations.remove(serviceId);
 			if (declaration != null) {
