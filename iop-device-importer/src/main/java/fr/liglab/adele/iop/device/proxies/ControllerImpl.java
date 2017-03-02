@@ -15,8 +15,8 @@
  */
 package fr.liglab.adele.iop.device.proxies;
 
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +52,12 @@ import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.ILookupResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationResponseEvent;
+import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupResponseEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.RegistrationEvent;
+import de.mannheim.wifo2.iop.functions.matching.IMatchRequest;
+import de.mannheim.wifo2.iop.functions.matching.SimpleMatchRequest;
+import de.mannheim.wifo2.iop.identifier.IComponentID;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
 import de.mannheim.wifo2.iop.identifier.ILocalServiceID;
 import de.mannheim.wifo2.iop.identifier.IServiceID;
@@ -105,7 +109,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	private IOPServiceDeclarationManager importManager;
 	private Map<IServiceDescription,IOPInvocationHandler> exportedServices = new ConcurrentHashMap<>();
 
-
+	private IMatchRequest lookupRequest	= new SimpleMatchRequest(new String[0]);
+	
 	/**
 	 * Constructor
 	 */
@@ -147,12 +152,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	}
 	
 	@Override
-	public void lookup(String[] services) {
-		// TODO Auto-generated method stub
-		
-	}	
-
-	@Override
 	public void publish(String id, String componentName, List<ICapability> capabilities, IOPInvocationHandler handler) {
 
 		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
@@ -167,6 +166,38 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		IServiceDescription service = new LocalService(serviceId, id, Collections.emptyList(), Collections.emptyList());
 		exportedServices.remove(service);
 	}
+
+
+	@Override
+	public void consider(String[] considered) {
+		String current[] 		= (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
+		
+		Set<String> updated 	= current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
+		updated.addAll(Arrays.asList(considered));
+
+		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]));
+	}
+
+	@Override
+	public void discard(String[] discarded) {
+		
+		String current[] 		= (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
+		
+		Set<String> updated 	= current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
+		updated.removeAll(Arrays.asList(discarded));
+		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]));
+	}
+
+	@Override
+	public void all() {
+		lookupRequest = new SimpleMatchRequest();
+	}
+
+	@Override
+	public void none() {
+		lookupRequest = new SimpleMatchRequest(new String[0]);
+	}
+
 
 	/**
 	 * LifeCycle
@@ -230,15 +261,29 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					break;
 				}
 				case IEvent.EVENT_LOOKUP : {
+					
+					/*
+					 * Send response with exported services
+					 */
 					ILookupEvent lookupEvent = (ILookupEvent) event;
 					List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
 					
-					ILookupResponseEvent responseEvent = new LookupResponseEvent(
-							new PluginID("LookResponseEventGenerator", rosePlugin.getID().getDeviceID()), lookupEvent.getID(), 
+					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID());
+					
+					ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService,lookupEvent.getID(), 
 							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(), 
 							matchedServices);
 
 					rosePlugin.enqueue(responseEvent);
+					
+					/*
+					 * An send back my own lookup request
+					 */
+					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(),
+							lookupRequest);
+					rosePlugin.enqueue(dualLookupEvent);	
+					 
 					break;
 				}
 				case IEvent.EVENT_APPLICATION : {
@@ -344,10 +389,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		private final void updateDeclarations(List<? extends IServiceDescription> services) {
 
-			Set<IServiceID> unrenewedServices 			= new HashSet<>(declarations.keySet());
+			Set<IServiceID> unrenewedServices 			= new HashSet<>();
 			Set<IServiceDescription> discoveredServices	= new HashSet<>();
 			
 			synchronized (this) {
+				unrenewedServices.addAll(declarations.keySet());
 				
 				for (IServiceDescription service : services) {
 					if (declarations.containsKey(service.getId())) {

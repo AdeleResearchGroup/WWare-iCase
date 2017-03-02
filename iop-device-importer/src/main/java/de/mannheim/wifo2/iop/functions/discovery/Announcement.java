@@ -5,19 +5,16 @@ import java.util.Vector;
 
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
 import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.eventing.event.EventID;
 import de.mannheim.wifo2.iop.eventing.event.essential.IAnnouncementEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.IRegistrationEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.AnnouncementEvent;
 import de.mannheim.wifo2.iop.eventing.event.essential.impl.DeviceRegistrationEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupEvent;
 import de.mannheim.wifo2.iop.functions.discovery.IAnnouncement;
-import de.mannheim.wifo2.iop.functions.matching.IMatchRequest;
-import de.mannheim.wifo2.iop.functions.matching.SimpleMatchRequest;
+
 import de.mannheim.wifo2.iop.identifier.IDeviceID;
 import de.mannheim.wifo2.iop.identifier.IPluginID;
 import de.mannheim.wifo2.iop.service.LocalService;
+
 import de.mannheim.wifo2.iop.system.IEnqueue;
 
 public class Announcement implements IAnnouncement, Runnable {
@@ -123,13 +120,5 @@ public class Announcement implements IAnnouncement, Runnable {
 		
 		mQueue.enqueue(deviceRegistrationEvent);
 		
-//		if(!mKnownSystems.contains(announcementEvent.getEndpointID()))  {			
-			IMatchRequest request = new SimpleMatchRequest();
-			ILookupEvent lookupEvent = new LookupEvent(mSystemID, EventID.getInstance().getNextID(),
-					mSystemID.getDeviceID(), deviceID, request);
-			
-			
-			mConnectionManager.send(lookupEvent);	
-//		}
 	}
 }
