@@ -1,0 +1,15 @@
+<PresenceSensor>
+	<message name="getSensedPresence" maps="getPresenceState" resultType="java.lang.Boolean">
+	</message>
+
+	<message name="getSensedPresenceResponse" maps="getPresenceStateResponse">
+		<part name="result" maps="result" type="java.lang.Boolean"/>
+	</message>
+
+	<interface name="fr.liglab.adele.icasa.device.presence.PresenceSensor" maps="SimplePresence">
+		<operation name="getSensedPresence" maps="getPresence">
+			<input name="getSensedPresence"/>
+			<output name="getSensedPresenceResponse"/>
+		</operation>
+	</interface>
+</PresenceSensor>

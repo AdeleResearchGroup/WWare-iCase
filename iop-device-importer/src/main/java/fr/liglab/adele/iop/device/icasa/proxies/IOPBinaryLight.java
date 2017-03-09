@@ -56,7 +56,6 @@ public class IOPBinaryLight implements GenericDevice, BinaryLight, IOPService {
     private boolean status;
 
 
-    
     @Requires(optional=false, proxy=false)
     private IOPInvocationHandler iopInvocationHandler;
 
