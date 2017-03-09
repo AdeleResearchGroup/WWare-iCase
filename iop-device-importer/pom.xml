@@ -88,15 +88,14 @@
                             ${project.artifactId}
                         </Bundle-SymbolicName>
                         <Embed-Dependency>
-                        	*;scope=compile|runtime;groupId=de.mannheim.wifo2|org.jdom
+                        	*;scope=runtime;groupId=org.jdom
                         </Embed-Dependency>
                         <Embed-Directory>lib</Embed-Directory>
                         <Private-Package>
                         	fr.liglab.adele.iop.device.*,
-                        	de.mannheim.wifo2.*;-split-package:=merge-first
+                        	de.mannheim.wifo2.*
                         </Private-Package>
 						<Import-Package>
-							!de.mannheim.wifo2.*,
                         	!org.jdom.*,
                         	*
                         </Import-Package>                        
