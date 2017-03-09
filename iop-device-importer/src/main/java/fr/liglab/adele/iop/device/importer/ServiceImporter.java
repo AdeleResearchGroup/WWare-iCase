@@ -305,7 +305,7 @@ public class ServiceImporter extends AbstractImporterComponent  {
 		return result;
 	}
 
-	@Bind(id="functionalExtension",optional=true,proxy=false,filter="(&(functional.extension.factory.property=*)(functional.extension.spec=fr.liglab.adele.iop.device.api.IOPService))")
+	@Bind(id="functionalExtension",optional=true,aggregate=true,proxy=false,filter="(&(functional.extension.factory.property=*)(functional.extension.spec=fr.liglab.adele.iop.device.api.IOPService))")
 	private void bindExtension(Factory extension, Map<String, Object> properties) {
 		functionalExtensions.put(extension, optional(properties.get("functional.extension.spec"), new String[0]));
 	}

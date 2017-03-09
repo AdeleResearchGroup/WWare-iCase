@@ -1,8 +1,6 @@
 package fr.liglab.adele.iop.device.api;
 
-import fr.liglab.adele.cream.annotations.ContextService;
-
-public @ContextService interface IOPLookupService {
+public interface IOPLookupService {
 
 	public void consider(String[] services);
 
