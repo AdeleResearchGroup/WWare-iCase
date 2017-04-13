@@ -20,6 +20,17 @@
     <url>https://github.com/AdeleResearchGroup/XWare-iCasa.git</url>
   </scm>
   
+  <build>
+  	<plugins>
+		<plugin>
+		   <artifactId>maven-release-plugin</artifactId>
+		   <configuration>
+		     <useReleaseProfile>false</useReleaseProfile>
+		     <goals>install</goals>
+		   </configuration>
+		 </plugin>
+  	</plugins>
+  </build>
   <modules>
   	<module>iop-library-install</module>
   	<module>iop-device-importer</module>

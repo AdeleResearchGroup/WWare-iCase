@@ -26,5 +26,17 @@
 	<!-- Project description -->
 	<name>${productName} :: ${projectName} :: IOP Library Installer</name>
 
+	<build>
+		<plugins>
+			<plugin>
+			   <artifactId>maven-release-plugin</artifactId>
+			   <configuration>
+			     <useReleaseProfile>false</useReleaseProfile>
+			     <goals>install</goals>
+			   </configuration>
+			 </plugin>
+		</plugins>
+	</build>
+
 </project>
       

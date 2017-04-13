@@ -122,6 +122,15 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+			   <artifactId>maven-release-plugin</artifactId>
+			   <configuration>
+			     <useReleaseProfile>false</useReleaseProfile>
+			     <goals>install</goals>
+			   </configuration>
+			 </plugin>
+			
 		</plugins>
 	</build>
 	
