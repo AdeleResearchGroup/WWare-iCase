@@ -13,6 +13,12 @@
   <packaging>pom</packaging>
   <name>${productName} :: ${projectName}</name>
   <version>0.1.0-SNAPSHOT</version>
+ 
+   <scm>
+    <connection>scm:git:git@github.com:AdeleResearchGroup/XWare-iCasa.git</connection>
+    <developerConnection>scm:git:git@github.com:AdeleResearchGroup/XWare-iCasa.git</developerConnection>
+    <url>https://github.com/AdeleResearchGroup/XWare-iCasa.git</url>
+  </scm>
   
   <modules>
   	<module>iop-library-install</module>
