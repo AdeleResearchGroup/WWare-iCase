@@ -20,7 +20,7 @@
 
 	<!-- Project coordinates -->
 	<artifactId>iop.library.install</artifactId>
-	<version>0.1.0</version>
+	<version>0.2.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	
 	<!-- Project description -->
@@ -37,10 +37,5 @@
 			 </plugin>
 		</plugins>
 	</build>
-
-
-  <scm>
-    <tag>iop.integration-0.1.0</tag>
-  </scm>
 </project>
       
