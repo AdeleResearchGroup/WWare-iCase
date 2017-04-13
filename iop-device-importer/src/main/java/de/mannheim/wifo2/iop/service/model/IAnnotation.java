@@ -1,5 +1,7 @@
 package de.mannheim.wifo2.iop.service.model;
 
-public interface IAnnotation {
+import java.io.Serializable;
+
+public interface IAnnotation extends Serializable  {
 
 }

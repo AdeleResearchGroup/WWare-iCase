@@ -8,29 +8,30 @@ import de.mannheim.wifo2.iop.connection.impl.ConnectionManager;
 import de.mannheim.wifo2.iop.connection.impl.MulticastGroup;
 import de.mannheim.wifo2.iop.connection.impl.TCPClientConnection;
 import de.mannheim.wifo2.iop.connection.impl.TCPServerConnection;
-import de.mannheim.wifo2.iop.eventing.EventDispatcher;
-import de.mannheim.wifo2.iop.eventing.IDynamicRouter;
-import de.mannheim.wifo2.iop.eventing.IEvent;
+import de.mannheim.wifo2.iop.event.EventDispatcher;
+import de.mannheim.wifo2.iop.event.IDynamicRouter;
+import de.mannheim.wifo2.iop.event.IEvent;
 import de.mannheim.wifo2.iop.functions.application.IInvocation;
 import de.mannheim.wifo2.iop.functions.application.Invocation;
 import de.mannheim.wifo2.iop.functions.discovery.Announcement;
 import de.mannheim.wifo2.iop.functions.discovery.IAnnouncement;
 import de.mannheim.wifo2.iop.functions.discovery.ILookup;
 import de.mannheim.wifo2.iop.functions.discovery.Lookup;
-import de.mannheim.wifo2.iop.identifier.DeviceID;
+import de.mannheim.wifo2.iop.functions.eventing.IEventing;
+import de.mannheim.wifo2.iop.functions.eventing.impl.SimpleEventing;
 import de.mannheim.wifo2.iop.identifier.IDeviceID;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
 import de.mannheim.wifo2.iop.identifier.IPluginID;
-import de.mannheim.wifo2.iop.identifier.PluginID;
-import de.mannheim.wifo2.iop.location.Location;
+import de.mannheim.wifo2.iop.identifier.impl.DeviceID;
+import de.mannheim.wifo2.iop.identifier.impl.PluginID;
+import de.mannheim.wifo2.iop.location.impl.Location;
+import de.mannheim.wifo2.iop.plugin.translation.MessageHandler;
 import de.mannheim.wifo2.iop.registry.DeviceRegistry;
 import de.mannheim.wifo2.iop.registry.IEndpointRegistry;
-import de.mannheim.wifo2.iop.system.IEnqueue;
-import de.mannheim.wifo2.iop.translation.MessageHandler;
-import de.mannheim.wifo2.iop.util.Constants;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
 
 public class APlugin implements IPlugin, IEnqueue, Runnable {
 	
@@ -46,13 +47,14 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 	protected IAnnouncement mAnnouncement;
 	protected ILookup mLookup;
 	protected IInvocation mInvocation;
+	protected IEventing mEventing;
 	
 	public APlugin(String name, IEnqueue mediator, 
 			Map<String, Object> properties)  {
 		mIsRunning = false;
 		
-		IDeviceID deviceID = new DeviceID((String) properties.get(Constants.SELF_ID),
-				new Location((String) properties.get(Constants.SELF_LOCATION)));
+		IDeviceID deviceID = new DeviceID("icasa_rose2",
+				new Location("127.0.0.1:7676"));
 		mPluginID = new PluginID(name, deviceID);
 		
 		mMediator = mediator;
@@ -65,11 +67,12 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 		initializeAnnouncementFunction(properties);
 		initializeLookupFunction(properties);
 		initializeInvocationFunction(properties);
+		initializeEventingFunction(properties);
 		initializeAdditionalFunctions(properties);
 		
 		initializeChannels();
 		
-		initializeConnections(properties);
+		initializeConnections(null);
 				
 		mThread = null;
 	}
@@ -156,7 +159,7 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 	}
 	
 	protected void initializeAnnouncementFunction(Map<String, Object> properties)  {
-		mAnnouncement = new Announcement(mMediator, mPluginID, mMediator, mConnectionManager, (int) properties.get(Constants.ADVERTISEMENT_PERIOD));
+		mAnnouncement = new Announcement(mMediator, mPluginID, mMediator, mConnectionManager, 10000);
 	}
 	
 	protected void initializeLookupFunction(Map<String, Object> properties)  {
@@ -167,19 +170,22 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 		mInvocation = new Invocation(mMediator, mPluginID, mMediator, mConnectionManager);
 	}
 	
+	protected void initializeEventingFunction(Map<String, Object> properties)  {
+		mEventing = new SimpleEventing(mMediator, mPluginID, mMediator, mConnectionManager);
+	}
+	
 	protected void initializeAdditionalFunctions(Map<String, Object> properties)  {
 		
 	}
 	
 	protected void initializeChannels()  {
 		if(mDeviceRegistry != null)  {
-			mEventDispatcher.registerChannel(IEvent.EVENT_DEVICE_REGISTRATION, mDeviceRegistry);
-			mEventDispatcher.registerChannel(IEvent.EVENT_DEVICE_DEREGISTRATION, mDeviceRegistry);
+			mEventDispatcher.registerChannel(IEvent.EVENT_EVENTING, mDeviceRegistry);
 		}
 		
 		if(mAnnouncement != null)  {
 			mEventDispatcher.registerChannel(IEvent.EVENT_ANNOUNCEMENT, mAnnouncement);
-			mEventDispatcher.registerChannel(IEvent.EVENT_REGISTRATION, mAnnouncement);
+			mEventDispatcher.registerChannel(IEvent.EVENT_EVENTING, mAnnouncement);
 		}
 		
 		if(mLookup != null)  {
@@ -191,6 +197,10 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 			mEventDispatcher.registerChannel(IEvent.EVENT_APPLICATION, mInvocation);
 			mEventDispatcher.registerChannel(IEvent.EVENT_APPLICATIONRESPONSE, mInvocation);
 		}
+		
+		if(mEventing != null)  {
+			mEventDispatcher.registerChannel(IEvent.EVENT_EVENTING, mEventing);
+		}
 	}
 	
 	protected void initializeConnectionManager(Map<String, Object> properties)  {
@@ -198,22 +208,15 @@ public class APlugin implements IPlugin, IEnqueue, Runnable {
 	}
 	
 	protected void initializeConnections(Map<String, Object> properties)  {
-
-		String address = (String) properties.get(Constants.CONNECTION_ADVERTISEMENT_ADDRESS);
-		Integer port = (Integer) properties.get(Constants.CONNECTION_ADVERTISEMENT_PORT);
-		
 		IDeviceID deviceID = new DeviceID(IConnectionManager.ADVERTISEMENT, 
-				new Location(null, address, port, null));
-		IConnection multicast = new MulticastGroup(mConnectionManager, address, port);
-
+				new Location(null, "239.255.0.8", 6565, null));
+		IConnection multicast = new MulticastGroup(mConnectionManager, "239.255.0.8", 6565);
 		mConnectionManager.addConnection(deviceID, multicast);
 		multicast.start();
 		
-		port = (Integer) properties.get(Constants.CONNECTION_SERVER_PORT);
-
 		IEndpointID deviceIDServer = new DeviceID(IConnectionManager.SERVER, 
-				new Location(null, "127.0.0.1", port, null));
-		IConnection server = new TCPServerConnection(mConnectionManager, TCPClientConnection.class, port);
+				new Location(null, "127.0.0.1", 7676, null));
+		IConnection server = new TCPServerConnection(mConnectionManager, TCPClientConnection.class, 7676);
 		mConnectionManager.addConnection(deviceIDServer, server);
 		server.start();
 		

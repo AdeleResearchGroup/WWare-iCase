@@ -95,7 +95,7 @@ public class ServiceExporter extends AbstractExporterComponent implements IOPInv
 		
 		ServiceDeclaration declaration = new ServiceDeclaration(exportDeclaration);
 		exportedServices.put(declaration.getId(),declaration.getService());
-		publisher.publish(declaration.getId(), declaration.getComponentId(), declaration.getCapabilities(), this);
+		publisher.publish(declaration.getId(), declaration.getComponentId(), declaration.getFunctionalities(), this);
 	}
 
 	@Override

@@ -1,5 +1,7 @@
 package de.mannheim.wifo2.iop.service.model;
 
-public interface ITransitionFunction {
+import java.io.Serializable;
+
+public interface ITransitionFunction extends Serializable  {
 
 }

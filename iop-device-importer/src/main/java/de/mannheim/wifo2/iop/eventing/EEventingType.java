@@ -1,0 +1,9 @@
+package de.mannheim.wifo2.iop.eventing;
+
+public enum EEventingType {
+	SERVICE_REGISTRATION,
+	SERVICE_DEREGISTRATION,
+	DEVICE_REGISTRATION,
+	DEVICE_DEREGISTRATION,
+	STATE_CHANGE
+}

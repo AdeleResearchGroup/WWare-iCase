@@ -56,8 +56,7 @@ import org.ow2.chameleon.fuchsia.core.component.ImporterService;
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
 import org.ow2.chameleon.fuchsia.core.exceptions.BinderException;
 
-import de.mannheim.wifo2.iop.service.model.ICapability;
-
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
 import fr.liglab.adele.icasa.device.GenericDevice;
 import fr.liglab.adele.iop.device.api.IOPService;
 
@@ -225,8 +224,8 @@ public class ServiceImporter extends AbstractImporterComponent  {
 		 * Get the list of functional specifications to provide, and their corresponding extension
 		 */
 		Set<String> expectedInterfaces 	= new HashSet<>();
-		for (ICapability capability : declaration.getService().getCapabilities()) {
-			expectedInterfaces.add(capability.getName());
+		for (IFunctionality functionality : declaration.getService().getFunctionalities()) {
+			expectedInterfaces.add(functionality.getName());
 		}
 
 		Set<String> actualInterfaces 	= new HashSet<>();

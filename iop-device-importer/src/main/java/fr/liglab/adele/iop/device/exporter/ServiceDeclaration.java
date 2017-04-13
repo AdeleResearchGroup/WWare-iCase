@@ -21,7 +21,7 @@ import java.util.Map;
 import org.ow2.chameleon.fuchsia.core.declaration.ExportDeclaration;
 import org.ow2.chameleon.fuchsia.core.declaration.ExportDeclarationBuilder;
 
-import de.mannheim.wifo2.iop.service.model.ICapability;
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
 
 public class ServiceDeclaration {
 
@@ -32,13 +32,13 @@ public class ServiceDeclaration {
 
     public final static String SERVICE_ID 			= "iop.exported.service.id";
 
-    public final static String SERVICE_CAPABILITIES = "iop.exported.service.capabilities";
+    public final static String SERVICE_CAPABILITIES = "iop.exported.service.functionalities";
 
 
-    private final String 			id;
-    private final String			componentId;
-    private final List<ICapability> capabilities;
-    private final Object			service;
+    private final String 				id;
+    private final String				componentId;
+    private final List<IFunctionality>	functionalities;
+    private final Object				service;
     
 	@SuppressWarnings("unchecked")
 	public ServiceDeclaration(ExportDeclaration declaration) {
@@ -46,7 +46,7 @@ public class ServiceDeclaration {
         id 				= (String) metadata.get(SERVICE_ID);
         componentId		= (String) metadata.get(COMPONENT_ID);
         service			= metadata.get(SERVICE);
-        capabilities	= (List<ICapability>) metadata.get(SERVICE_CAPABILITIES);
+        functionalities	= (List<IFunctionality>) metadata.get(SERVICE_CAPABILITIES);
     }
 
     public String getId() {
@@ -57,22 +57,22 @@ public class ServiceDeclaration {
     	return componentId;
     }
     
-    public List<ICapability> getCapabilities() {
-    	return capabilities;
+    public List<IFunctionality> getFunctionalities() {
+    	return functionalities;
     }
 
     public Object getService() {
     	return service;
     }
     
-    public static ExportDeclaration from(Object service, String id, List<ICapability> capabilities, String componentId) {
+    public static ExportDeclaration from(Object service, String id, List<IFunctionality> functionalities, String componentId) {
     	
     	return ExportDeclarationBuilder.empty()
     			.key("scope").value("generic")
     			.key(SERVICE).value(service)
     			.key(COMPONENT_ID).value(componentId)
     			.key(SERVICE_ID).value(id)
-    			.key(SERVICE_CAPABILITIES).value(capabilities)
+    			.key(SERVICE_CAPABILITIES).value(functionalities)
     			.build();
     }
 

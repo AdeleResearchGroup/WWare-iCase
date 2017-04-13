@@ -9,10 +9,10 @@ import de.mannheim.wifo2.iop.connection.AConnection;
 import de.mannheim.wifo2.iop.connection.IAcceptConnection;
 import de.mannheim.wifo2.iop.connection.IConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.identifier.DeviceID;
+import de.mannheim.wifo2.iop.event.IEvent;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
-import de.mannheim.wifo2.iop.location.Location;
+import de.mannheim.wifo2.iop.identifier.impl.DeviceID;
+import de.mannheim.wifo2.iop.location.impl.Location;
 
 public class TCPServerConnection extends AConnection  implements IAcceptConnection {
 	protected ServerSocket serverSocket;

@@ -9,8 +9,8 @@ import java.net.MulticastSocket;
 
 import de.mannheim.wifo2.iop.connection.AConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.translation.IMessageHandler;
+import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.plugin.translation.IMessageHandler;
 
 public class MulticastGroup extends AConnection {
 	protected MulticastSocket mSocket;

@@ -1,9 +1,9 @@
 package de.mannheim.wifo2.iop.functions.discovery;
 
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
-import de.mannheim.wifo2.iop.eventing.IEvent;
+import de.mannheim.wifo2.iop.event.IEvent;
 import de.mannheim.wifo2.iop.identifier.IPluginID;
-import de.mannheim.wifo2.iop.system.IEnqueue;
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
 
 public abstract class AAnnouncement implements IAnnouncement, Runnable  {
 	protected IEnqueue mQueue;

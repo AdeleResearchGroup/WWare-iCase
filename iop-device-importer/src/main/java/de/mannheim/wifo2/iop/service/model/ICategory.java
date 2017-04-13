@@ -1,5 +1,7 @@
 package de.mannheim.wifo2.iop.service.model;
 
-public interface ICategory {
+import java.io.Serializable;
+
+public interface ICategory extends Serializable  {
 	public String getName();
 }

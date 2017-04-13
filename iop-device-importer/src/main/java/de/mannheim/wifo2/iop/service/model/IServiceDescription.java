@@ -8,6 +8,6 @@ public interface IServiceDescription {
 	public IServiceID getId();
 	public String getName();
 //	public List<String> getFunctionality();
-	public List<ICapability> getCapabilities();
+	public List<IFunctionality> getFunctionalities();
 	public List<IProperty> getProperties();
 }

@@ -1,6 +1,6 @@
 package de.mannheim.wifo2.iop.connection;
 
-import de.mannheim.wifo2.iop.translation.IMessageHandler;
+import de.mannheim.wifo2.iop.plugin.translation.IMessageHandler;
 
 public abstract class AConnection implements IConnection  {
 	private Thread mProcess;

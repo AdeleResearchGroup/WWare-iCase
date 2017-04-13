@@ -1,5 +1,8 @@
 package de.mannheim.wifo2.iop.service.model;
 
-public interface IInput {
+import java.io.Serializable;
+
+public interface IInput extends Serializable  {
 	public String getName();
+	public String getType();
 }

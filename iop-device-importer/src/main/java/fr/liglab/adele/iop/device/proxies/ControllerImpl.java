@@ -44,34 +44,39 @@ import org.ow2.chameleon.fuchsia.core.component.DiscoveryIntrospection;
 import org.ow2.chameleon.fuchsia.core.component.DiscoveryService;
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
 
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.eventing.event.EventID;
-import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.ILookupResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.ApplicationResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.LookupResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.impl.RegistrationEvent;
-import de.mannheim.wifo2.iop.functions.matching.IMatchRequest;
-import de.mannheim.wifo2.iop.functions.matching.SimpleMatchRequest;
+import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.event.EventID;
+import de.mannheim.wifo2.iop.event.i.IApplicationEvent;
+import de.mannheim.wifo2.iop.event.i.IApplicationResponseEvent;
+import de.mannheim.wifo2.iop.event.i.IEventingEvent;
+import de.mannheim.wifo2.iop.event.i.ILookupEvent;
+import de.mannheim.wifo2.iop.event.i.ILookupResponseEvent;
+import de.mannheim.wifo2.iop.event.impl.ApplicationEvent;
+import de.mannheim.wifo2.iop.event.impl.ApplicationResponseEvent;
+import de.mannheim.wifo2.iop.event.impl.EventingEvent;
+import de.mannheim.wifo2.iop.event.impl.LookupEvent;
+import de.mannheim.wifo2.iop.event.impl.LookupResponseEvent;
+import de.mannheim.wifo2.iop.eventing.EEventingType;
+import de.mannheim.wifo2.iop.plugin.function.matching.IMatchRequest;
+import de.mannheim.wifo2.iop.plugin.function.matching.impl.SimpleMatchRequest;
+
 import de.mannheim.wifo2.iop.identifier.IComponentID;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
 import de.mannheim.wifo2.iop.identifier.ILocalServiceID;
 import de.mannheim.wifo2.iop.identifier.IServiceID;
-import de.mannheim.wifo2.iop.identifier.LocalServiceID;
-import de.mannheim.wifo2.iop.identifier.PluginID;
+import de.mannheim.wifo2.iop.identifier.impl.LocalServiceID;
+import de.mannheim.wifo2.iop.identifier.impl.PluginID;
 import de.mannheim.wifo2.iop.plugin.APlugin;
+
 import de.mannheim.wifo2.iop.service.LocalService;
-import de.mannheim.wifo2.iop.service.functionality.Call;
 import de.mannheim.wifo2.iop.service.functionality.ICall;
 import de.mannheim.wifo2.iop.service.functionality.IParameter;
-import de.mannheim.wifo2.iop.service.functionality.Parameter;
-import de.mannheim.wifo2.iop.service.model.ICapability;
+import de.mannheim.wifo2.iop.service.functionality.impl.Call;
+import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
 import de.mannheim.wifo2.iop.service.model.IServiceDescription;
-import de.mannheim.wifo2.iop.system.IEnqueue;
+
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 
 
@@ -152,10 +157,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	}
 	
 	@Override
-	public void publish(String id, String componentName, List<ICapability> capabilities, IOPInvocationHandler handler) {
+	public void publish(String id, String componentName, List<IFunctionality> functionalities, IOPInvocationHandler handler) {
 
 		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
-		IServiceDescription service = new LocalService(serviceId, componentName, capabilities, Collections.emptyList());
+		IServiceDescription service = new LocalService(serviceId, componentName, functionalities, Collections.emptyList());
 		
 		exportedServices.put(service, handler);
 	}
@@ -224,7 +229,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		myServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
 		
-		rosePlugin.enqueue(new RegistrationEvent(rosePlugin.getID(), new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList())));
+		IEventingEvent registrationEvent = 	new EventingEvent(rosePlugin.getID(), EEventingType.SERVICE_REGISTRATION);
+		registrationEvent.addProperty(IEventingEvent.SERVICE, new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList()));
+		
+		rosePlugin.enqueue(registrationEvent);
 		
 	}
 
@@ -336,7 +344,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					}
 					break;
 				}
-				case IEvent.EVENT_DEVICE_REGISTRATION : {
+				case IEvent.EVENT_EVENTING : {
 					System.out.println("Device regsitered "+event);
 					break;
 				}

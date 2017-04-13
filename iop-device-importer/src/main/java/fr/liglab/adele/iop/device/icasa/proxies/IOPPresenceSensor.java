@@ -5,7 +5,8 @@ import java.util.Collections;
 import org.apache.felix.ipojo.annotations.Requires;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
-import de.mannheim.wifo2.iop.service.functionality.Call;
+
+import de.mannheim.wifo2.iop.service.functionality.impl.Call;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender;

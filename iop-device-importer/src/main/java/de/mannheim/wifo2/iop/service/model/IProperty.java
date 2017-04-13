@@ -1,6 +1,8 @@
 package de.mannheim.wifo2.iop.service.model;
 
-public interface IProperty {
+import java.io.Serializable;
+
+public interface IProperty extends Serializable  {
 	public static final int TYPE_CONTEXT = 0;
 	public static final int TYPE_QUALITATIVE = 1;
 	public static final int TYPE_QUANTITATIVE = 2;

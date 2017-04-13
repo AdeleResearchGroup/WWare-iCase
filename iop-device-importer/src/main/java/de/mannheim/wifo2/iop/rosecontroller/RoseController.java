@@ -1,11 +1,11 @@
 package de.mannheim.wifo2.iop.rosecontroller;
 
-import de.mannheim.wifo2.iop.eventing.IEvent;
+import de.mannheim.wifo2.iop.event.IEvent;
 import de.mannheim.wifo2.iop.plugin.APlugin;
 import de.mannheim.wifo2.iop.plugin.IPlugin;
-import de.mannheim.wifo2.iop.system.IEnqueue;
-import de.mannheim.wifo2.iop.system.IStop;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
+import de.mannheim.wifo2.iop.util.i.IStop;
 
 public class RoseController implements IEnqueue, Runnable, IStop  {
 

@@ -21,8 +21,8 @@ import org.ow2.chameleon.fuchsia.core.component.ExportManagerIntrospection;
 import org.ow2.chameleon.fuchsia.core.component.ExportManagerService;
 import org.ow2.chameleon.fuchsia.core.declaration.ExportDeclaration;
 
-import de.mannheim.wifo2.iop.service.model.Capability;
-import de.mannheim.wifo2.iop.service.model.ICapability;
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
+import de.mannheim.wifo2.iop.service.model.impl.Functionality;
 
 import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.iop.device.api.IOPService;
@@ -48,15 +48,15 @@ public class LocatedObjectPublisher extends AbstractExportManagerComponent {
 		if (service instanceof IOPService)
 			return;
 
-		String component				= (String) properties.get("factory.name");
-		String id						= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
-		List<ICapability> capabilities 	= new ArrayList<>();
+		String component						= (String) properties.get("factory.name");
+		String id								= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
+		List<IFunctionality> functionalities 	= new ArrayList<>();
 		
 		for (String provided : (String[])properties.get(org.osgi.framework.Constants.OBJECTCLASS)) {
-			capabilities.add(new Capability(provided));
+			functionalities.add(new Functionality(provided));
 		}
 		
-		ExportDeclaration declaration = ServiceDeclaration.from(service,id,capabilities,component);
+		ExportDeclaration declaration = ServiceDeclaration.from(service,id,functionalities,component);
 		published.put(id,declaration);
 		registerExportDeclaration(declaration);
 	}

@@ -3,9 +3,9 @@ package de.mannheim.wifo2.iop.functions.matching;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.mannheim.wifo2.iop.functions.matching.IMatchRequest;
 import de.mannheim.wifo2.iop.functions.matching.IServiceMatching;
-import de.mannheim.wifo2.iop.service.model.ICapability;
+import de.mannheim.wifo2.iop.plugin.function.matching.IMatchRequest;
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
 import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
@@ -25,7 +25,7 @@ public class SyntacticMatching implements IServiceMatching {
 		if(requestedFunctionalities != null)  {
 			for(String rf : requestedFunctionalities)  {
 				for(IServiceDescription s : services)  {
-					for(ICapability c : s.getCapabilities())  {
+					for(IFunctionality c : s.getFunctionalities())  {
 						if(rf.equals(c.getName()))  {
 							matchingServices.add(s);
 							continue;

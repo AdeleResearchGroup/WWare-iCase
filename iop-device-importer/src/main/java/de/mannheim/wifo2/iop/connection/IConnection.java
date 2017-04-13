@@ -1,7 +1,7 @@
 package de.mannheim.wifo2.iop.connection;
 
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.translation.IMessageHandler;
+import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.plugin.translation.IMessageHandler;
 
 public interface IConnection extends Runnable {
 	public boolean send(IEvent event);

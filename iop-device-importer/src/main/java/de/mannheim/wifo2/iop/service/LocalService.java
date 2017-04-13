@@ -4,7 +4,7 @@ import java.util.List;
 
 import de.mannheim.wifo2.iop.identifier.ILocalServiceID;
 import de.mannheim.wifo2.iop.service.ILocalServiceDescription;
-import de.mannheim.wifo2.iop.service.model.ICapability;
+import de.mannheim.wifo2.iop.service.model.IFunctionality;
 import de.mannheim.wifo2.iop.service.model.IProperty;
 
 public class LocalService implements ILocalServiceDescription  {
@@ -12,15 +12,15 @@ public class LocalService implements ILocalServiceDescription  {
 	
 	private ILocalServiceID mId;
 	private String mName;
-	private List<ICapability> mCapabilities;
+	private List<IFunctionality> mFunctionalities;
 	private List<IProperty> mProperties;
 	
 	public LocalService(ILocalServiceID id, String name, 
-			List<ICapability> capabilities, 
+			List<IFunctionality> functionalities, 
 			List<IProperty> properties) {
 		mId = id;
 		mName = name;
-		mCapabilities = capabilities;
+		mFunctionalities = functionalities;
 		mProperties = properties;
 	}
 
@@ -35,8 +35,8 @@ public class LocalService implements ILocalServiceDescription  {
 	}
 	
 	@Override
-	public List<ICapability> getCapabilities() {
-		return mCapabilities;
+	public List<IFunctionality> getFunctionalities() {
+		return mFunctionalities;
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public class LocalService implements ILocalServiceDescription  {
 		sb.append("LocalService(");
 		sb.append(mId + ", ");
 		sb.append(mName + ", ");
-		sb.append(mCapabilities + ", ");
+		sb.append(mFunctionalities + ", ");
 		sb.append(mProperties);
 		sb.append(")");
 		

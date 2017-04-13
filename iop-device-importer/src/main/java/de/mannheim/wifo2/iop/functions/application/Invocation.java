@@ -1,12 +1,12 @@
 package de.mannheim.wifo2.iop.functions.application;
 
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
-import de.mannheim.wifo2.iop.eventing.IEvent;
+import de.mannheim.wifo2.iop.event.IEvent;
 import de.mannheim.wifo2.iop.functions.application.IInvocation;
 import de.mannheim.wifo2.iop.identifier.IPluginID;
-import de.mannheim.wifo2.iop.system.IEnqueue;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
 
 public class Invocation implements IInvocation {
 	private IPluginID mSystemID;

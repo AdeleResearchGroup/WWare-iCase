@@ -8,7 +8,7 @@ import de.mannheim.wifo2.iop.connection.IConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
 import de.mannheim.wifo2.iop.connection.IConnectionTable;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
-import de.mannheim.wifo2.iop.identifier.SystemID;
+import de.mannheim.wifo2.iop.identifier.impl.SystemID;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
 

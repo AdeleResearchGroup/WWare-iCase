@@ -8,8 +8,8 @@ import java.net.UnknownHostException;
 
 import de.mannheim.wifo2.iop.connection.AConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.translation.IMessageHandler;
+import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.plugin.translation.IMessageHandler;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
 
@@ -60,7 +60,7 @@ public class TCPClientConnection extends AConnection  {
 		while(!isClosed())  {
 			if(mSocket != null)  {
 				IEvent result = receive();
-				
+
 				if(result != null)  {	
 					this.getConnectionManager().receive(result);
 				}

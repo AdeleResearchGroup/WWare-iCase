@@ -7,25 +7,22 @@ import de.mannheim.wifo2.iop.connection.ConnectionTable;
 import de.mannheim.wifo2.iop.connection.IConnection;
 import de.mannheim.wifo2.iop.connection.IConnectionManager;
 import de.mannheim.wifo2.iop.connection.IConnectionTable;
-import de.mannheim.wifo2.iop.eventing.IDirectedEvent;
-import de.mannheim.wifo2.iop.eventing.IEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IAdvertisementEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IAnnouncementEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IApplicationResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IDeregistrationEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.ILookupEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.ILookupResponseEvent;
-import de.mannheim.wifo2.iop.eventing.event.essential.IRegistrationEvent;
-import de.mannheim.wifo2.iop.identifier.DeviceID;
+import de.mannheim.wifo2.iop.event.IDirectedEvent;
+import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.event.i.IAnnouncementEvent;
+import de.mannheim.wifo2.iop.event.i.IApplicationEvent;
+import de.mannheim.wifo2.iop.event.i.IApplicationResponseEvent;
+import de.mannheim.wifo2.iop.event.i.ILookupEvent;
+import de.mannheim.wifo2.iop.event.i.ILookupResponseEvent;
 import de.mannheim.wifo2.iop.identifier.IDeviceID;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
 import de.mannheim.wifo2.iop.identifier.IPluginID;
 import de.mannheim.wifo2.iop.identifier.IServiceID;
-import de.mannheim.wifo2.iop.system.IEnqueue;
-import de.mannheim.wifo2.iop.translation.IMessageHandler;
+import de.mannheim.wifo2.iop.identifier.impl.DeviceID;
+import de.mannheim.wifo2.iop.plugin.translation.IMessageHandler;
 import de.mannheim.wifo2.iop.util.debug.DebugConstants;
 import de.mannheim.wifo2.iop.util.debug.Log;
+import de.mannheim.wifo2.iop.util.i.IEnqueue;
 
 public class ConnectionManager implements IConnectionManager  {		
 	private IConnectionTable mConnections;
@@ -107,17 +104,17 @@ public class ConnectionManager implements IConnectionManager  {
 				Log.log(getClass(), "Received event (" + event + ")");
 			
 			//nur damit keine Nachrichten vom eigenen System weitergeleitet werden*****************
-			if(type == IEvent.EVENT_REGISTRATION)  {
-				source = ((IRegistrationEvent)event).getService().getId().getDeviceID();
-			}
-			else if(type == IEvent.EVENT_DEREGISTRATION)  {
-				source = ((IServiceID) ((IDeregistrationEvent)event).getServiceID()).getDeviceID();
-			}
-			else if(type == IEvent.EVENT_ADVERTISEMENT)  {
-				source = ((IAdvertisementEvent)event).getEndpointID();
-			}
+//			if(type == IEvent.EVENT_REGISTRATION)  {
+//				source = ((IRegistrationEvent)event).getService().getId().getDeviceID();
+//			}
+//			else if(type == IEvent.EVENT_DEREGISTRATION)  {
+//				source = ((IServiceID) ((IDeregistrationEvent)event).getServiceID()).getDeviceID();
+//			}
+//			else if(type == IEvent.EVENT_ADVERTISEMENT)  {
+//				source = ((IAdvertisementEvent)event).getEndpointID();
+//			}
 			else if(type == IEvent.EVENT_ANNOUNCEMENT)  {
-				source = ((IAnnouncementEvent)event).getEndpointID();
+				source = ((IAnnouncementEvent)event).getSourceID();
 			}
 			else if(type == IEvent.EVENT_LOOKUP)  {
 				source = ((IEndpointID) ((ILookupEvent)event).getSourceID());
