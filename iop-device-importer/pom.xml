@@ -88,6 +88,9 @@
                         <Bundle-SymbolicName>
                             ${project.artifactId}
                         </Bundle-SymbolicName>
+			            <Include-Resource>{maven-resources},
+                          META-INF/NOTICE = NOTICE
+                        </Include-Resource>
                         <Embed-Dependency>
                         	*;scope=runtime;groupId=org.jdom
                         </Embed-Dependency>
