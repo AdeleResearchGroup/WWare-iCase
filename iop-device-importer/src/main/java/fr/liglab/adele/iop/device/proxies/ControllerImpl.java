@@ -83,7 +83,7 @@ import fr.liglab.adele.iop.device.api.IOPPublisher;
 import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
 
 
-@ContextEntity(services = {IOPController.class, })
+@ContextEntity(coreServices = {IOPController.class, })
 @Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class, IOPInvocationHandler.class, IOPLookupService.class, IOPPublisher.class })
 
 public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IEnqueue, Runnable   {

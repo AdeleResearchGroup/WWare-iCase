@@ -27,7 +27,7 @@ import fr.liglab.adele.iop.device.api.IOPService;
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 
 
-@ContextEntity(services=IOPService.class)
+@ContextEntity(coreServices=IOPService.class)
 
 @FunctionalExtension(id="Located",		
 	contextServices=LocatedObject.class,
