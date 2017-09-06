@@ -62,7 +62,7 @@ public class Announcement implements IAnnouncement, Runnable {
 	@Override
 	public void stop() {
 		mIsRunning = false;
-//		mThread = null;
+		mThread = null;
 	}
 	
 	@Override
@@ -99,15 +99,17 @@ public class Announcement implements IAnnouncement, Runnable {
 				new AnnouncementEvent(mSystemID, 
 						mSystemID.getDeviceID(), 
 						mTarget,
-						/*localService != null ? Collections.singletonList(localService) : */Collections.emptyList(), -1);
+						Collections.emptyList(), -1);
 		mConnectionManager.send(event);
 	}
 
 	@Override
 	public void processAnnouncement(IEvent event) {
 		IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
+		IDeviceID deviceID = (IDeviceID) announcementEvent.getSourceID();
 		
 		//TODO or better enqueue announcement event?
+		mKnownSystems.addElement(deviceID);
 		
 		IEventingEvent deviceRegistrationEvent =
 				new EventingEvent(mSystemID, EEventingType.DEVICE_REGISTRATION);
@@ -117,15 +119,5 @@ public class Announcement implements IAnnouncement, Runnable {
 		
 		mQueue.enqueue(deviceRegistrationEvent);
 		
-//		if(!mKnownSystems.contains(announcementEvent.getEndpointID()))  {			
-//			IDeviceID deviceID = (IDeviceID) announcementEvent.getSourceID();
-//			IMatchRequest request = new SimpleMatchRequest();
-//			ILookupEvent lookupEvent = new LookupEvent(mSystemID, EventID.getInstance().getNextID(),
-//					mSystemID.getDeviceID(), deviceID, request);
-//			
-//			mKnownSystems.addElement(deviceID);
-//			
-//			mConnectionManager.send(lookupEvent);	
-//		}
 	}
 }

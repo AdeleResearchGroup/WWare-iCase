@@ -32,7 +32,7 @@ public class ServiceDeclaration {
 
     public final static String SERVICE_ID 			= "iop.exported.service.id";
 
-    public final static String SERVICE_CAPABILITIES = "iop.exported.service.functionalities";
+    public final static String SERVICE_CAPABILITIES = "iop.exported.service.capabilities";
 
 
     private final String 				id;
