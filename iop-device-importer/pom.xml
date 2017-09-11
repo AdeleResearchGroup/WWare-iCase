@@ -7,7 +7,7 @@
 		<groupId>fr.liglab.adele.icasa</groupId>
 		<artifactId>parent</artifactId>
 		<version>1.2.7-SNAPSHOT</version>
-		<relativePath>../../../iCasa/project/parent/</relativePath>
+		<relativePath></relativePath>
 	</parent>
 	
 	<artifactId>iop-device-importer</artifactId>
