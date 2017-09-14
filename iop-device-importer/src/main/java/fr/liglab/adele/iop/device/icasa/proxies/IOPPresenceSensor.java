@@ -1,6 +1,7 @@
 package fr.liglab.adele.iop.device.icasa.proxies;
 
 import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.felix.ipojo.annotations.Requires;
 
@@ -44,10 +45,15 @@ public class IOPPresenceSensor implements PresenceSensor, GenericDevice, IOPServ
 
 	@Override
 	public boolean getSensedPresence() {
-		Boolean result = (Boolean) iopInvocationHandler.invoke(remoteServiceId, new Call("getSensedPresence", Collections.emptyList(), Boolean.class));
-		if (result != null) {
-			presence = result.booleanValue();
+		try {
+			Boolean result = (Boolean) iopInvocationHandler.invoke(remoteServiceId, 
+											new Call("getSensedPresence",Collections.emptyList(),Boolean.class),
+											IOPInvocationHandler.TIMEOUT);
+			if (result != null) {
+				presence = result.booleanValue();		
+			}
 			
+		} catch (TimeoutException e) {
 		}
 		
 		return presence;

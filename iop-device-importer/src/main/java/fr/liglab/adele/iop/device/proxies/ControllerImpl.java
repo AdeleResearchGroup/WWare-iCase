@@ -25,6 +25,7 @@ import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,32 +129,95 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		return "IOPDeviceDiscovery";
 	}
 
+	/**
+	 * A value used to represent a result of null. This is required as the {@link #pendingResponses} table
+	 * do not accept null values or keys
+	 */
+	private static final Object NULL_RESULT = new Object();
+	
+	/**
+	 * Send an invocation request to the specified service
+	 */
 	@Override
-	public Object invoke(IServiceID target, ICall call) {
+	public Object invoke(IServiceID target, ICall call, long timeout) throws TimeoutException {
+		
 		int eventId = EventID.getInstance().getNextID();
-		ApplicationEvent invocation = new ApplicationEvent(new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID()), eventId, myServiceId, target, call);
+		
+		ApplicationEvent invocation = new ApplicationEvent(new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID()), 
+											eventId, myServiceId, target, call);
 
+		/*
+		 * If no response expected, just return to the caller
+		 */
 		if (!call.expectsResult()) {
 			mQueue.enqueue(invocation);
-		}
-		else {
-			pendingInvocations.put(eventId,invocation);
-			mQueue.enqueue(invocation);
-
-			if (pendingInvocations.containsKey(eventId)) {
-				synchronized(invocation) {
-					try {
-						invocation.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			return pendingResponses.remove(eventId);
+			return null;
 		}
 		
-		return null;
+		/*
+		 * Send the request and wait for response (that will arrive concurrently in another thread)
+		 * 
+		 */
+		pendingInvocations.put(eventId,invocation);
+		mQueue.enqueue(invocation);
+
+		if (pendingInvocations.containsKey(eventId)) {
+			synchronized(invocation) {
+				try {
+					invocation.wait(timeout);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		
+		/*
+		 * Get the response if available
+		 */
+		boolean timeoutExpired = ! pendingResponses.containsKey(eventId);
+		
+		if (timeoutExpired) {
+			pendingInvocations.remove(eventId);
+			throw new TimeoutException();
+		}
+			
+		Object result = pendingResponses.remove(eventId);
+		if (result == NULL_RESULT) {
+			result = null;
+		}
+			
+		return result;
+			 
+	}
+	
+	/**
+	 * Handle responses to ongoing invocations
+	 */
+	private void invocationResponse(IApplicationResponseEvent response) {
+
+		Object result = null;
+		for (IParameter parameter : response.getResponse().getParameters()) {
+			if (parameter.getKey().equalsIgnoreCase("result")) {
+				result = parameter.getValue();
+			}
+		}
+		
+		boolean invocationIsWaiting = pendingInvocations.containsKey(response.getID());
+		
+		if (invocationIsWaiting) {
+			
+			IApplicationEvent invocation = pendingInvocations.remove(response.getID());
+			if (invocation != null) {
+				pendingResponses.put(response.getID(), result != null ? result : NULL_RESULT);
+				synchronized(invocation) {
+					invocation.notifyAll();
+				}
+				
+			}
+			
+		}
+
 	}
 	
 	@Override
@@ -259,8 +323,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			if(!mQueue.isEmpty())  {				
 				IEvent event = mQueue.dequeue();
 
-				System.out.println("IOP CONTROLLER event arrived "+event);
-				
 				switch(event.getType()) {
 				case IEvent.EVENT_LOOKUPRESPONSE: {
 					if (importManager != null) {
@@ -298,23 +360,37 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					IApplicationEvent invocation = (IApplicationEvent) event;
 					//incoming
 					if (rosePlugin != null && invocation.getSource().equals(rosePlugin.getID())) {
+
 						IServiceDescription service 	= new LocalService((ILocalServiceID)invocation.getTargetID(), null, Collections.emptyList(), Collections.emptyList());
 						IOPInvocationHandler handler 	= exportedServices.get(service);
 
+						Object result = null;
+						
 						if (handler != null) {
-							Object result = handler.invoke((IServiceID)invocation.getTargetID(), invocation.getCall());
-							if (result != null) {
-								PluginID componentId = new PluginID("ApplicationResponseEventGenerator", rosePlugin.getID().getDeviceID());
-								ICall call = new Call(null, Collections.singletonList(new Parameter("result", result)), null);
-								IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(
-																			componentId,
-																			invocation.getID(),
-																			(IServiceID)invocation.getTargetID(), (IServiceID)invocation.getSourceID(), 
-																			call );
-								rosePlugin.enqueue(responseEvent);								
+							try {
 
+								result = handler.invoke((IServiceID)invocation.getTargetID(),
+												invocation.getCall(), 
+												IOPInvocationHandler.TIMEOUT);
+								
+							} catch (TimeoutException e) {
+								result = null;
 							}
 						}
+							
+						if (result != null) {
+							PluginID componentId = new PluginID("ApplicationResponseEventGenerator", rosePlugin.getID().getDeviceID());
+							ICall call = new Call(null, Collections.singletonList(new Parameter("result", result)), null);
+							IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(
+																			componentId,
+																			invocation.getID(),
+																			(IServiceID)invocation.getTargetID(),
+																			(IServiceID)invocation.getSourceID(), 
+																			call);
+							rosePlugin.enqueue(responseEvent);								
+
+						}
+						
 					}
 					//outgoing
 					else {
@@ -323,29 +399,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					break;
 				}
 				case IEvent.EVENT_APPLICATIONRESPONSE : {
-					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
-					System.out.println("application response "+response);
-					Object result = null;
-					for (IParameter parameter : response.getResponse().getParameters()) {
-						if (parameter.getKey().equalsIgnoreCase("result")) {
-							result = parameter.getValue();
-						}
-					}
-					
-					if (result != null)
-						pendingResponses.put(response.getID(), result);
-					
-					IApplicationEvent invocation = pendingInvocations.remove(response.getID());
-					if (invocation != null) {
-						synchronized(invocation) {
-							invocation.notifyAll();
-						}
-						
-					}
+					invocationResponse((IApplicationResponseEvent)event);
 					break;
 				}
 				case IEvent.EVENT_EVENTING : {
-					System.out.println("Device regsitered "+event);
 					break;
 				}
 				}

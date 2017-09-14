@@ -16,6 +16,7 @@
 package fr.liglab.adele.iop.device.icasa.proxies;
 
 import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.felix.ipojo.annotations.Requires;
 
@@ -69,33 +70,58 @@ public class IOPBinaryLight implements GenericDevice, BinaryLight, IOPService {
 
 	@Override
 	public boolean getPowerStatus() {
-		Boolean result = (Boolean) iopInvocationHandler.invoke(remoteServiceId, new Call("getPowerStatus", Collections.emptyList(), Boolean.class));
-		if (result != null) {
-			status = result.booleanValue();
+		
+		try {
+			Boolean result = (Boolean) iopInvocationHandler.invoke(remoteServiceId,
+					new Call("getPowerStatus", Collections.emptyList(), Boolean.class),
+					IOPInvocationHandler.TIMEOUT);
 			
-		}
+			if (result != null) {
+				status = result.booleanValue();
+			}
+			
+		} catch (TimeoutException e) {}
+
 		return status;
 	}
 
 
 	@Override
 	public void setPowerStatus(boolean status) {
-		iopInvocationHandler.invoke(remoteServiceId, new Call("setPowerStatus", Collections.singletonList(new Parameter("status", status)), null));
-		status = false;
+		try {
+			iopInvocationHandler.invoke(remoteServiceId,
+					new Call("setPowerStatus", Collections.singletonList(new Parameter("status", status)), null),
+					IOPInvocationHandler.TIMEOUT);
+			
+			this.status = status;
+			
+		} catch (TimeoutException e) {}
 	}
 
 
 	@Override
 	public void turnOff() {
-		iopInvocationHandler.invoke(remoteServiceId, new Call("turnOff", Collections.emptyList(), null));
-		status = false;
+		try {
+			iopInvocationHandler.invoke(remoteServiceId,
+					new Call("turnOff", Collections.emptyList(), null),
+					IOPInvocationHandler.TIMEOUT);
+			
+			status = false;
+			
+		} catch (TimeoutException e) {}
 	}
 
 
 	@Override
 	public void turnOn() {
-		iopInvocationHandler.invoke(remoteServiceId, new Call("turnOn", Collections.emptyList(), null));
-		status = true;
+		try {
+			iopInvocationHandler.invoke(remoteServiceId,
+					new Call("turnOn", Collections.emptyList(), null),
+					IOPInvocationHandler.TIMEOUT);
+			
+			status = true;
+			
+		} catch (TimeoutException e) {}
 	}
 
 

@@ -107,9 +107,9 @@ public class ServiceExporter extends AbstractExporterComponent implements IOPInv
 
 
 	@Override
-	public Object invoke(IServiceID target, ICall call) {
+	public Object invoke(IServiceID target, ICall call, long timeout) {
+
 		Object result 	= null;
-		
 		try {
 			Object service				= exportedServices.get(target.getObjectID());
 
@@ -124,11 +124,13 @@ public class ServiceExporter extends AbstractExporterComponent implements IOPInv
 			Method method	= service.getClass().getMethod(call.getSignature(),parameters.toArray(new Class<?>[0]));
 			
 			result = method.invoke(service, arguments.toArray());
+			
 		} catch (NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
 		}
+		
 		return result;
 	}
 
