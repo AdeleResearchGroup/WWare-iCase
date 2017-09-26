@@ -1,0 +1,13 @@
+<ThermometerService>
+	<message name="getTemperature" maps="getTemperature" resultType="java.lang.Double">
+	</message>
+	<message name="getTemperatureResponse" maps="getTemperatureResponse">
+		<part name="result" type="java.lang.Double" unit="kelvin" maps="result"/>
+	</message>
+	<interface name="fr.liglab.adele.icasa.device.temperature.Thermometer" maps="SimpleThermometer">
+		<operation name="getTemperature" maps="getTemp">
+			<input name="getTemperature"/>
+			<output name="getTemperatureResponse"/>
+		</operation>
+	</interface>
+</ThermometerService>

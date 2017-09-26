@@ -1,0 +1,13 @@
+<ChatService>
+	<message name="getTemperature" resultType="java.lang.Long">
+	</message>
+	<message name="getTemperatureResponse">
+		<part name="result" type="java.lang.Long"  unit="kelvin"/>
+	</message>
+	<interface name="SimpleThermometer">
+		<operation name="getTemp">
+			<input name="getTemperature"/>
+			<output name="getTemperatureResponse"/>
+		</operation>
+	</interface>
+</ChatService>
