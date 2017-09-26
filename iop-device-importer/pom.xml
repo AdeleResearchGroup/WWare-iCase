@@ -7,11 +7,11 @@
 		<groupId>fr.liglab.adele.icasa</groupId>
 		<artifactId>parent</artifactId>
 		<version>1.2.7-SNAPSHOT</version>
-		<relativePath/>
+		<relativePath />
 	</parent>
 	
 	<artifactId>iop-device-importer</artifactId>
-  	<version>0.2.0-SNAPSHOT</version>
+  	<version>0.2.0</version>
 	<packaging>bundle</packaging>
 	<name>${productName} :: ${projectName} :: IOP Device Importer</name>
 	
@@ -161,4 +161,8 @@
 			
 		</plugins>
 	</build>
+
+  <scm>
+    <tag>iop.integration-0.2.0</tag>
+  </scm>
 </project>
