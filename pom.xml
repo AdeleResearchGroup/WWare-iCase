@@ -6,7 +6,7 @@
     <groupId>fr.liglab.adele.icasa</groupId>
     <artifactId>parent</artifactId>
     <version>1.2.7-SNAPSHOT</version>
-	<relativePath></relativePath>
+	<relativePath/>
   </parent>
   
   <artifactId>iop.integration</artifactId>
@@ -34,7 +34,7 @@
   </build>
   
   <modules>
-  	<module>iop-library-install</module>
   	<module>iop-device-importer</module>
+  	<module>iop-interop-distribution</module>
   </modules>
 </project>

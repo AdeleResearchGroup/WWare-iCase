@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2010-2011 Université Joseph Fourier Licensed under the Apache 
+	License, Version 2.0 (the "License"); you may not use this file except in 
+	compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
+	Unless required by applicable law or agreed to in writing, software distributed 
+	under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES 
+	OR CONDITIONS OF ANY KIND, either express or implied. See the License for 
+	the specific language governing permissions and limitations under the License. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Project parent -->
+	<parent>
+		<groupId>fr.liglab.adele.icasa</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.2.7-SNAPSHOT</version>
+		<relativePath/>
+	</parent>
+
+	<!-- Project coordinates -->
+	<artifactId>icasa.interop.distribution</artifactId>
+  	<version>0.2.0-SNAPSHOT</version>
+	<packaging>osgi-distribution</packaging>
+	
+	<name>${productName} :: ${projectName}</name>
+
+    <properties>
+        <icasa.version>1.2.7-SNAPSHOT</icasa.version>
+        <fuchsia.version>0.0.5-SNAPSHOT</fuchsia.version>
+    </properties>
+
+	<!-- Project dependencies -->
+	<dependencies>
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>icasa.dashboard.distribution</artifactId>
+			<version>${icasa.version}</version>
+			<type>osgi-distribution</type>
+		</dependency>
+
+		<!--Fuschia Dep -->
+		<dependency>
+			<groupId>org.ow2.chameleon.fuchsia</groupId>
+			<artifactId>org.ow2.chameleon.fuchsia.core</artifactId>
+			<version>${fuchsia.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.ow2.chameleon.fuchsia.discovery</groupId>
+			<artifactId>org.ow2.chameleon.fuchsia.discovery.filebased</artifactId>
+			<version>${fuchsia.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.ow2.chameleon.fuchsia.tools</groupId>
+			<artifactId>fuchsia-gogo-shell</artifactId>
+			<version>${fuchsia.version}</version>
+		</dependency>
+
+		<!--SIMULATOR -->
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>simulator.web.instance</artifactId>
+			<version>${icasa.version}</version>
+		</dependency>
+
+		<!-- Context -->
+		<dependency>
+			<groupId>fr.liglab.adele.cream</groupId>
+			<artifactId>cream.runtime.facilities</artifactId>
+		</dependency>
+
+		<!-- Context Management -->
+
+		<dependency>
+	        <groupId>fr.liglab.adele.cream</groupId>
+			<artifactId>cream.administration.api</artifactId>
+			<version>${context.socm.version}</version>
+			<type>bundle</type>
+		</dependency>
+
+		<dependency>
+	        <groupId>fr.liglab.adele.cream</groupId>
+			<artifactId>cream.administration.impl</artifactId>
+			<version>${context.socm.version}</version>
+			<type>bundle</type>
+		</dependency>
+
+		<dependency>
+	        <groupId>fr.liglab.adele.cream</groupId>
+			<artifactId>cream.administration.command</artifactId>
+	        <version>${context.socm.version}</version>
+			<type>bundle</type>
+		</dependency>
+
+			<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>context.manager.api</artifactId>
+			<version>${icasa.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>context.manager.impl</artifactId>
+			<version>${icasa.version}</version>
+		</dependency>
+
+		
+		<!--Interop -->
+		
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>iop-device-importer</artifactId>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.apache.commons</groupId>
+		    <artifactId>commons-collections4</artifactId>
+		    <version>4.1</version>
+		    <scope>runtime</scope>
+		</dependency>
+		
+		<dependency>
+		    <groupId>jaxen</groupId>
+		    <artifactId>jaxen</artifactId>
+		    <version>1.1.6</version>
+		    <scope>runtime</scope>
+		</dependency>
+		
+		<!--Applications -->
+		
+		<dependency>
+	        <groupId>fr.liglab.adele.icasa.management.webdisplay</groupId>
+    		<artifactId>wisdom-webdisplay</artifactId>
+        	<version>1.0-SNAPSHOT</version>
+        	<type>wisdom</type>
+		</dependency>
+
+		<dependency>
+  			<groupId>fr.liglab.adele.icasa.apps</groupId>
+  			<artifactId>demo.configurator.application</artifactId>
+			<version>${icasa.version}</version>
+  			<type>bundle</type>
+		</dependency>
+
+		<dependency>
+  			<groupId>fr.liglab.adele.icasa.apps</groupId>
+			<artifactId>demo.interop.comfort.management.application</artifactId>
+			<version>${icasa.version}</version>
+  			<type>bundle</type>
+		</dependency>
+		
+        <dependency>
+            <groupId>fr.liglab.adele.icasa.apps</groupId>
+            <artifactId>demo.ligth.follow.me.application</artifactId>
+            <version>${icasa.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.liglab.adele.icasa.apps</groupId>
+            <artifactId>demo.pet.care.application</artifactId>
+            <version>${icasa.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.liglab.adele.icasa.apps</groupId>
+            <artifactId>demo.fall.detection.application</artifactId>
+            <version>${icasa.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.liglab.adele.icasa.apps</groupId>
+            <artifactId>demo.fire.alarm.application</artifactId>
+            <version>${icasa.version}</version>
+        </dependency>
+		
+		
+	</dependencies>
+
+	<build>
+	
+		<resources>
+			<resource>
+				<directory>${project.build.directory}/xware</directory>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+		
+		<plugins>
+
+            <plugin>
+                <groupId>org.wisdom-framework</groupId>
+                <artifactId>wisdom-maven-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+
+			<plugin>
+				<groupId>fr.liglab.adele.common</groupId>
+				<artifactId>maven-osgi-distribution-plugin</artifactId>
+				<configuration>
+					<flattenDP>false</flattenDP>
+					<defaultOutputDirectory>applications</defaultOutputDirectory>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.5.1</version>
+				<executions>
+					<execution>
+						<id>unpack-xware-configuration</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>fr.liglab.adele.icasa</groupId>
+									<artifactId>iop-device-importer</artifactId>
+									<version>0.2.0-SNAPSHOT</version>
+									<type>bundle</type>
+									<includes>load/import/xware.txt</includes>
+									<outputDirectory>${project.build.directory}/xware</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+					
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+	<profiles>
+		<profile>
+			<id>all</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>wagon-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>upload-snapshot</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>upload-single</goal>
+								</goals>
+								<configuration>
+									<serverId>icasa-deploy-cloudbees-snapshot</serverId>
+									<fromFile>${project.build.directory}/${project.artifactId}-${project.version}.zip</fromFile>
+									<url>https://repository-icasa.forge.cloudbees.com/snapshot</url>
+									<toFile>fr/liglab/adele/icasa/${project.artifactId}/${project.version}/${project.artifactId}-${project.version}.zip</toFile>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+	</profiles>
+</project>
