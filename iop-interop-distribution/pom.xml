@@ -19,7 +19,7 @@
 
 	<!-- Project coordinates -->
 	<artifactId>icasa.interop.distribution</artifactId>
-  	<version>0.2.0</version>
+  	<version>0.2.1-SNAPSHOT</version>
 	<packaging>osgi-distribution</packaging>
 	
 	<name>${productName} :: ${projectName}</name>
@@ -264,8 +264,4 @@
 		</profile>
 
 	</profiles>
-
-  <scm>
-    <tag>iop.integration-0.2.0</tag>
-  </scm>
 </project>
