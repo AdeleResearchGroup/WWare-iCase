@@ -10,7 +10,7 @@ public interface IOPInvocationHandler {
 	/**
 	 * The default time out for invocation dispatch
 	 */
-	public static final long TIMEOUT = 1000l;
+	public static final long TIMEOUT = 5000l;
 	
 	/**
 	 * invokes the specified method of the referenced service

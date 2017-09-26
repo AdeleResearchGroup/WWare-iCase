@@ -17,7 +17,6 @@ package fr.liglab.adele.iop.device.icasa.proxies;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 import de.mannheim.wifo2.iop.service.functionality.impl.Call;
-import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender;
 import fr.liglab.adele.icasa.device.GenericDevice;
@@ -72,18 +71,17 @@ public class IOPThermometer implements GenericDevice, Thermometer, IOPService {
 		
 		try {
 
-			//System.out.println("***************** temperature call ***** ");
-
 			Double result = (Double) iopInvocationHandler.invoke(remoteServiceId,
 					new Call("getTemperature", Collections.emptyList(), Double.class),
-					20000l);
+							IOPInvocationHandler.TIMEOUT);
 
-			//System.out.println("***************** temperature received :"+result+" ***** ");
 			if (result != null) {
 				status = Quantities.getQuantity(result, Units.KELVIN);
 			}
 			
-		} catch (TimeoutException e) {}
+		} catch (TimeoutException e) {
+			e.printStackTrace();
+		}
 
 		return status;
 	}
