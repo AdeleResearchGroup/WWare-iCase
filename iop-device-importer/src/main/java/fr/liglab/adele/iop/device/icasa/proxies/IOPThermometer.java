@@ -17,6 +17,7 @@ package fr.liglab.adele.iop.device.icasa.proxies;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 import de.mannheim.wifo2.iop.service.functionality.impl.Call;
+import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender;
 import fr.liglab.adele.icasa.device.GenericDevice;
@@ -24,6 +25,8 @@ import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
 import fr.liglab.adele.iop.device.api.IOPService;
 import org.apache.felix.ipojo.annotations.Requires;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.Units;
 
@@ -34,51 +37,53 @@ import java.util.concurrent.TimeoutException;
 
 
 /**
- * An proxy to an IOP XWare-based service implementing the BinaryLigth interface
- * 
- * @author vega
+ * An proxy to an IOP XWare-based service implementing a thermometer
+ *
+ * @author castillo
  *
  */
 @FunctionalExtender(contextServices = {GenericDevice.class,Thermometer.class,IOPService.class})
 public class IOPThermometer implements GenericDevice, Thermometer, IOPService {
 
-
-    /**
-     * State
-     */
+	private static final Logger LOG = LoggerFactory.getLogger(IOPThermometer.class);
+	/**
+	 * State
+	 */
 	@ContextEntity.State.Field(service = GenericDevice.class,state = GenericDevice.DEVICE_SERIAL_NUMBER)
-    private String serialNumber;
+	private String serialNumber;
 
 	@ContextEntity.State.Field(service=IOPService.class, state = IOPService.SERVICE_ID)
-    private IServiceID remoteServiceId;
+	private IServiceID remoteServiceId;
 
-    @ContextEntity.State.Field(service = Thermometer.class,state = Thermometer.THERMOMETER_CURRENT_TEMPERATURE,directAccess=true)
-    private Quantity<Temperature> status;
-
-
-    @Requires(optional=false, proxy=false)
-    private IOPInvocationHandler iopInvocationHandler;
+	@ContextEntity.State.Field(service = Thermometer.class,state = Thermometer.THERMOMETER_CURRENT_TEMPERATURE,directAccess=true)
+	private Quantity<Temperature> status;
 
 
-    @Override
-    public String getSerialNumber() {
-        return serialNumber;
-    }
+	@Requires(optional=false, proxy=false)
+	private IOPInvocationHandler iopInvocationHandler;
+
+
+	@Override
+	public String getSerialNumber() {
+		return serialNumber;
+	}
 
 
 	@Override
 	public Quantity<Temperature> getTemperature() {
-		
+
 		try {
 
+			LOG.debug("--Temperature call from iCasa");
 			Double result = (Double) iopInvocationHandler.invoke(remoteServiceId,
 					new Call("getTemperature", Collections.emptyList(), Double.class),
 							IOPInvocationHandler.TIMEOUT);
+			LOG.debug("----Temperature received from external source: "+result);
 
 			if (result != null) {
 				status = Quantities.getQuantity(result, Units.KELVIN);
 			}
-			
+
 		} catch (TimeoutException e) {
 			e.printStackTrace();
 		}
