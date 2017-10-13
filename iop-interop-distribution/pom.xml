@@ -93,24 +93,13 @@
 			<type>bundle</type>
 		</dependency>
 
-			<dependency>
-			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>context.manager.api</artifactId>
-			<version>${icasa.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>context.manager.impl</artifactId>
-			<version>${icasa.version}</version>
-		</dependency>
-
-		
 		<!--Interop -->
 		
 		<dependency>
 			<groupId>fr.liglab.adele.icasa</groupId>
 			<artifactId>iop-device-importer</artifactId>
+			<version>${project.version}</version>
+			<type>bundle</type>
 		</dependency>
 
 		<dependency>
@@ -129,51 +118,13 @@
 		
 		<!--Applications -->
 		
-		<dependency>
-	        <groupId>fr.liglab.adele.icasa.management.webdisplay</groupId>
-    		<artifactId>wisdom-webdisplay</artifactId>
-        	<version>1.0-SNAPSHOT</version>
-        	<type>wisdom</type>
-		</dependency>
-
-		<dependency>
-  			<groupId>fr.liglab.adele.icasa.apps</groupId>
-  			<artifactId>demo.configurator.application</artifactId>
-			<version>${icasa.version}</version>
-  			<type>bundle</type>
-		</dependency>
-
-		<dependency>
-  			<groupId>fr.liglab.adele.icasa.apps</groupId>
-			<artifactId>demo.interop.comfort.management.application</artifactId>
-			<version>${icasa.version}</version>
-  			<type>bundle</type>
-		</dependency>
 		
         <dependency>
-            <groupId>fr.liglab.adele.icasa.apps</groupId>
-            <artifactId>demo.ligth.follow.me.application</artifactId>
+			<groupId>fr.liglab.adele.icasa.apps</groupId>
+			<artifactId>binary.light.follow.me.application</artifactId>
+ 			<type>bundle</type>
             <version>${icasa.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>fr.liglab.adele.icasa.apps</groupId>
-            <artifactId>demo.pet.care.application</artifactId>
-            <version>${icasa.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>fr.liglab.adele.icasa.apps</groupId>
-            <artifactId>demo.fall.detection.application</artifactId>
-            <version>${icasa.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>fr.liglab.adele.icasa.apps</groupId>
-            <artifactId>demo.fire.alarm.application</artifactId>
-            <version>${icasa.version}</version>
-        </dependency>
-		
 		
 	</dependencies>
 
@@ -221,7 +172,7 @@
 								<artifactItem>
 									<groupId>fr.liglab.adele.icasa</groupId>
 									<artifactId>iop-device-importer</artifactId>
-									<version>0.2.0-SNAPSHOT</version>
+									<version>${project.version}</version>
 									<type>bundle</type>
 									<includes>load/import/xware.txt</includes>
 									<outputDirectory>${project.build.directory}/xware</outputDirectory>
