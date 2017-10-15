@@ -17,7 +17,6 @@ package fr.liglab.adele.iop.device.icasa.proxies;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 import de.mannheim.wifo2.iop.service.functionality.impl.Call;
-import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender;
 import fr.liglab.adele.icasa.device.GenericDevice;

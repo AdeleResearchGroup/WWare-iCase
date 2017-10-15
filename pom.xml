@@ -20,6 +20,43 @@
     <url>https://github.com/AdeleResearchGroup/XWare-iCasa.git</url>
     <tag>HEAD</tag>
   </scm>
+
+	<repositories>
+		<repository>
+			<id>icasa-socm-repository</id>
+			<name>iCasa SOCM Cloudbees Snapshot Private Repository</name>
+			<url>http://repository-icasa.forge.cloudbees.com/socm</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>fuchsia-socm-repository</id>
+			<url>http://repository-icasa.forge.cloudbees.com/fuchsia</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>adele-central-snapshots</id>
+			<name>adele-central-snapshot</name>
+			<url>http://repository-icasa.forge.cloudbees.com/snapshot</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
   
   <build>
   	<plugins>
