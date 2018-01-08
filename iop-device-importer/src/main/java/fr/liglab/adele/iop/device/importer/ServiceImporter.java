@@ -110,7 +110,8 @@ public class ServiceImporter extends AbstractImporterComponent  {
 			
 			Map<String,Object> properties = new HashMap<>();
 			properties.put(ContextEntity.State.id(GenericDevice.class,GenericDevice.DEVICE_SERIAL_NUMBER),instanceId);
-			properties.put(ContextEntity.State.id(IOPService.class,IOPService.SERVICE_ID),declaration.getService().getId());
+			//TODO getId() --> getID()
+			properties.put(ContextEntity.State.id(IOPService.class,IOPService.SERVICE_ID),declaration.getService().getID());
 
 			creator.create(instanceId,properties);
 		}
@@ -132,7 +133,8 @@ public class ServiceImporter extends AbstractImporterComponent  {
 	 * Get the identifier of the service instance
 	 */
 	private static String getInstanceId(ServiceDeclaration serviceDeclaration) {
-		return serviceDeclaration.getService().getName()+"-proxy-"+serviceDeclaration.getService().getId().getObjectID();
+		//TODO getId() --> getID()
+		return serviceDeclaration.getService().getName()+"-proxy-"+serviceDeclaration.getService().getID().getObjectID();
 	}
 
 	/**

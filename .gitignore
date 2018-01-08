@@ -10,3 +10,6 @@
 # maven folders
 
 target
+/.metadata/
+
+/.recommenders/

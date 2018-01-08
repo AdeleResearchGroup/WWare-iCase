@@ -3,7 +3,7 @@ package fr.liglab.adele.iop.device.api;
 import java.util.concurrent.TimeoutException;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
-import de.mannheim.wifo2.iop.service.functionality.ICall;
+import de.mannheim.wifo2.iop.service.access.ICall;
 
 public interface IOPInvocationHandler {
 

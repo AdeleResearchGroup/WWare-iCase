@@ -25,8 +25,8 @@ import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtender
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 
-import de.mannheim.wifo2.iop.service.functionality.impl.Call;
-import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
+import de.mannheim.wifo2.iop.service.access.impl.Call;
+import de.mannheim.wifo2.iop.service.access.impl.Parameter;
 
 
 import fr.liglab.adele.icasa.device.GenericDevice;

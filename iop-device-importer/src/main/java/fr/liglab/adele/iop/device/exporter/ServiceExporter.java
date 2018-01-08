@@ -43,8 +43,8 @@ import org.ow2.chameleon.fuchsia.core.declaration.ExportDeclaration;
 import org.ow2.chameleon.fuchsia.core.exceptions.BinderException;
 
 import de.mannheim.wifo2.iop.identifier.IServiceID;
-import de.mannheim.wifo2.iop.service.functionality.ICall;
-import de.mannheim.wifo2.iop.service.functionality.IParameter;
+import de.mannheim.wifo2.iop.service.access.ICall;
+import de.mannheim.wifo2.iop.service.access.IParameter;
 import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
 import fr.liglab.adele.iop.device.api.IOPPublisher;
 

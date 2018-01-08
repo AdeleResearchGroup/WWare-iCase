@@ -15,8 +15,14 @@
  */
 package fr.liglab.adele.iop.device.proxies;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,39 +51,46 @@ import org.ow2.chameleon.fuchsia.core.component.DiscoveryIntrospection;
 import org.ow2.chameleon.fuchsia.core.component.DiscoveryService;
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
 
+import de.mannheim.wifo2.iop.context.i.IContextManagement;
+import de.mannheim.wifo2.iop.event.EDiscoveryType;
+import de.mannheim.wifo2.iop.event.IDynamicRouter;
 import de.mannheim.wifo2.iop.event.IEvent;
-import de.mannheim.wifo2.iop.event.EventID;
 import de.mannheim.wifo2.iop.event.i.IApplicationEvent;
 import de.mannheim.wifo2.iop.event.i.IApplicationResponseEvent;
-import de.mannheim.wifo2.iop.event.i.IEventingEvent;
+import de.mannheim.wifo2.iop.event.i.IDiscoveryEvent;
 import de.mannheim.wifo2.iop.event.i.ILookupEvent;
 import de.mannheim.wifo2.iop.event.i.ILookupResponseEvent;
+import de.mannheim.wifo2.iop.event.identifier.EventID;
 import de.mannheim.wifo2.iop.event.impl.ApplicationEvent;
 import de.mannheim.wifo2.iop.event.impl.ApplicationResponseEvent;
-import de.mannheim.wifo2.iop.event.impl.EventingEvent;
+import de.mannheim.wifo2.iop.event.impl.DiscoveryEvent;
 import de.mannheim.wifo2.iop.event.impl.LookupEvent;
 import de.mannheim.wifo2.iop.event.impl.LookupResponseEvent;
-import de.mannheim.wifo2.iop.eventing.EEventingType;
+import de.mannheim.wifo2.iop.event.semantics.i.IInteraction;
+import de.mannheim.wifo2.iop.event.semantics.impl.Interaction;
 import de.mannheim.wifo2.iop.plugin.function.matching.IMatchRequest;
-import de.mannheim.wifo2.iop.plugin.function.matching.impl.SimpleMatchRequest;
-
 import de.mannheim.wifo2.iop.identifier.IComponentID;
 import de.mannheim.wifo2.iop.identifier.IEndpointID;
 import de.mannheim.wifo2.iop.identifier.ILocalServiceID;
+import de.mannheim.wifo2.iop.identifier.IMediatorID;
+import de.mannheim.wifo2.iop.identifier.IPluginID;
 import de.mannheim.wifo2.iop.identifier.IServiceID;
 import de.mannheim.wifo2.iop.identifier.impl.LocalServiceID;
 import de.mannheim.wifo2.iop.identifier.impl.PluginID;
-import de.mannheim.wifo2.iop.plugin.APlugin;
-
+import de.mannheim.wifo2.iop.mediator.IMediator;
+import de.mannheim.wifo2.iop.mediator.filter.i.IFilter;
+import de.mannheim.wifo2.iop.plugin.IPlugin;
 import de.mannheim.wifo2.iop.service.LocalService;
-import de.mannheim.wifo2.iop.service.functionality.ICall;
-import de.mannheim.wifo2.iop.service.functionality.IParameter;
-import de.mannheim.wifo2.iop.service.functionality.impl.Call;
-import de.mannheim.wifo2.iop.service.functionality.impl.Parameter;
+import de.mannheim.wifo2.iop.service.access.ICall;
+import de.mannheim.wifo2.iop.service.access.IParameter;
+import de.mannheim.wifo2.iop.service.access.impl.Call;
+import de.mannheim.wifo2.iop.service.access.impl.Parameter;
+import de.mannheim.wifo2.iop.service.matching.SimpleMatchRequest;
 import de.mannheim.wifo2.iop.service.model.IFunctionality;
 import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 
 import de.mannheim.wifo2.iop.util.i.IEnqueue;
+import de.mannheim.wifo2.xware.plugin.RosePlugin;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 
 
@@ -92,8 +105,11 @@ import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
 @ContextEntity(coreServices = {IOPController.class, })
 @Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class, IOPInvocationHandler.class, IOPLookupService.class, IOPPublisher.class })
 
-public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IEnqueue, Runnable   {
+//TODO changed IEnqueue to IMediator
+public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IMediator, Runnable   {
 
+	private static final boolean EVALUATION = true;
+	
 	private static final Logger LOG = LoggerFactory.getLogger(ControllerImpl.class);
 
 	@Property(name=fr.liglab.adele.cream.model.ContextEntity.CONTEXT_ENTITY_ID)
@@ -102,7 +118,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.PROPERTIES)
 	private Map<String,Object> properties;
 
-	private APlugin 			rosePlugin;
+	//TODO changed to RosePlugin
+	private RosePlugin 			rosePlugin;
 	private Thread 				mThread;
 	private Queue<IEvent> 		mQueue;
 	private boolean 			mIsRunning;
@@ -143,8 +160,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		
 		int eventId = EventID.getInstance().getNextID();
 		
-		ApplicationEvent invocation = new ApplicationEvent(new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID()), 
-											eventId, myServiceId, target, call);
+		IInteraction interaction = (call.expectsResult() ? 
+				new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE) : 
+				new Interaction(IInteraction.SEMANTICS_CS_ONE_WAY)); 
+		ApplicationEvent invocation = new ApplicationEvent(new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS), 
+											eventId, myServiceId, target, call, interaction);
 
 		/*
 		 * If no response expected, just return to the caller
@@ -197,7 +217,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	private void invocationResponse(IApplicationResponseEvent response) {
 
 		Object result = null;
-		for (IParameter parameter : response.getResponse().getParameters()) {
+		for (IParameter parameter : response.getCall().getParameters()) {
 			if (parameter.getKey().equalsIgnoreCase("result")) {
 				result = parameter.getValue();
 			}
@@ -272,7 +292,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	 * LifeCycle
 	 */
 	@Validate
-	protected synchronized void start() {
+	public synchronized void start() {
 		super.start();
 
 		LOG.debug("Starting IOP Controller");
@@ -288,20 +308,47 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mThread.start();
 		mIsRunning = true;
 		
-		rosePlugin = new APlugin("iCasa over IOP", this, properties);
+		properties = new HashMap<>();
+		properties.put("INTERACTION_PARADIGM", (byte)1);
+		properties.put("CONNECTION_MANAGER", "de.mannheim.wifo2.iop.plugin.connectionmanager.impl.ConnectionManager");
+		properties.put("FUNCTION_ANNOUNCEMENT", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.DeviceAnnouncement");
+		properties.put("MESSAGE_HANDLER", "de.mannheim.wifo2.iop.plugin.icasa.ICasaEncodingHandler");
+		properties.put("CONNECTION_MANAGER_ADVERTISEMENT_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.MulticastGroup");
+		properties.put("CONNECTION_MANAGER_LOOKUP_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
+		properties.put("CONNECTION_MANAGER_SERVER_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
+		properties.put("CONNECTION_MANAGER_DELETE_AFTER_SEND", false);
+		properties.put("CONNECTION_ADVERTISEMENT_SERVER", "de.mannheim.wifo2.iop.plugin.connection.impl.MulticastGroup");
+		properties.put("CONNECTION_SERVER", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPServerConnection");
+		properties.put("CONNECTION_SERVER_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
+		properties.put("CONNECTION_LOOKUP_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
+		properties.put("FUNCTION_ADVERTISEMENT", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleAdvertisement");
+		properties.put("FUNCTION_INVOCATION", "de.mannheim.wifo2.iop.plugin.function.application.impl.SimpleInvocation");
+		properties.put("FUNCTION_LOOKUP", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleLookup");
+		properties.put("FUNCTION_MATCHING", "de.mannheim.wifo2.iop.plugin.function.matching.impl.SyntacticMatching");
+		properties.put("FUNCTION_ROUTING", "de.mannheim.wifo2.iop.plugin.function.routing.impl.SimpleRouting");
+		properties.put("FUNCTION_EVENTING", "de.mannheim.wifo2.iop.plugin.function.eventing.impl.SimpleEventing");
+		properties.put("FUNCTION_EXCEPTION_HANDLING", "de.mannheim.wifo2.iop.plugin.function.exceptionhandling.impl.SimpleExceptionHandling");
+		properties.put("FUNCTION_SLEEP_TIME", 50);
+		properties.put("LEASE_TIMEOUT", 40000);
+		properties.put("INVOCATION_REPLY", false);
+		properties.put("EVENTING_SUPPORT", true);
+		
+		//TODO changed to RosePlugin from APlugin as APlugin is abstract
+		rosePlugin = new RosePlugin("iCasa over IOP", this, properties);
 		rosePlugin.start();
 
 		myServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
 		
-		IEventingEvent registrationEvent = 	new EventingEvent(rosePlugin.getID(), EEventingType.SERVICE_REGISTRATION);
-		registrationEvent.addProperty(IEventingEvent.SERVICE, new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList()));
+		//TODO IEventingEvent --> excluded discovery to IDiscoveryEvent (DiscoveryEvent, EDiscoveryType)
+		IDiscoveryEvent registrationEvent = 	new DiscoveryEvent(rosePlugin.getID(), EDiscoveryType.SERVICE_REGISTRATION);
+		registrationEvent.addProperty(IDiscoveryEvent.SERVICE, new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList()));
 		
 		rosePlugin.enqueue(registrationEvent);
 		
 	}
 
 	@Invalidate
-	protected synchronized void stop() {
+	public synchronized void stop() {
 		super.stop();
 
 		mIsRunning = false;
@@ -319,6 +366,17 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 	@Override
 	public void run() {
+		PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(
+					System.getProperty("user.home") + File.separator + "iCasa-log" 
+							+ System.currentTimeMillis() + ".txt", "UTF-8");
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (UnsupportedEncodingException e1) {
+			e1.printStackTrace();
+		}
+		
 		while(mIsRunning)  {
 			if(!mQueue.isEmpty())  {				
 				IEvent event = mQueue.dequeue();
@@ -330,19 +388,31 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					}
 					break;
 				}
+				case IEvent.EVENT_DISCOVERY:  {
+					IDiscoveryEvent discEvent = (IDiscoveryEvent) event;
+					if(discEvent.getDiscoveryType() == EDiscoveryType.SERVICE_REGISTRATION)  {
+						if (importManager != null) {
+							importManager.dispatch(discEvent);
+						}
+						break;
+					}
+				}
 				case IEvent.EVENT_LOOKUP : {
+					ILookupEvent lookupEvent = (ILookupEvent) event;
 					
+					//incoming
+					if (rosePlugin != null && !lookupEvent.getTargetID().equals(rosePlugin.getID())) {
 					/*
 					 * Send response with exported services
 					 */
-					ILookupEvent lookupEvent = (ILookupEvent) event;
 					List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
 					
-					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID());
+					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
 					
 					ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService,lookupEvent.getID(), 
 							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(), 
 							matchedServices);
+					responseEvent.setReadyToSend(true);
 
 					rosePlugin.enqueue(responseEvent);
 					
@@ -352,7 +422,12 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
 							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(),
 							lookupRequest);
-					rosePlugin.enqueue(dualLookupEvent);	
+					rosePlugin.enqueue(dualLookupEvent);
+					}
+					//outgoing
+					{
+						rosePlugin.getConnectionManager().send(lookupEvent);
+					}
 					 
 					break;
 				}
@@ -379,14 +454,15 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 						}
 							
 						if (result != null) {
-							PluginID componentId = new PluginID("ApplicationResponseEventGenerator", rosePlugin.getID().getDeviceID());
+							PluginID componentId = new PluginID("ApplicationResponseEventGenerator", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
 							ICall call = new Call(null, Collections.singletonList(new Parameter("result", result)), null);
 							IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(
 																			componentId,
 																			invocation.getID(),
 																			(IServiceID)invocation.getTargetID(),
 																			(IServiceID)invocation.getSourceID(), 
-																			call);
+																			call,
+																			new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE));
 							rosePlugin.enqueue(responseEvent);								
 
 						}
@@ -394,12 +470,29 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 					}
 					//outgoing
 					else {
+						invocation.setReadyToSend(true);
+						
+						if(EVALUATION)  {
+							writer.print(System.nanoTime());
+						}
 						rosePlugin.getConnectionManager().send(invocation);
 					}
 					break;
 				}
 				case IEvent.EVENT_APPLICATIONRESPONSE : {
-					invocationResponse((IApplicationResponseEvent)event);
+					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
+					//incoming
+					if (rosePlugin != null && response.getSource().equals(rosePlugin.getID())) {
+						if(EVALUATION)  {
+							writer.println("\t" + System.nanoTime());
+							writer.flush();
+						}
+					invocationResponse(response);
+					}
+					else  {
+						event.setReadyToSend(true);
+						rosePlugin.getConnectionManager().send(event);
+					}
 					break;
 				}
 				case IEvent.EVENT_EVENTING : {
@@ -409,7 +502,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			}
 			else  {
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(1);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -431,6 +524,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		
 		public void dispatch(ILookupResponseEvent event) {
 			updateDeclarations(event.getServices());
+		}
+		
+		public void dispatch(IDiscoveryEvent event) {
+			updateDeclarations(Collections.singletonList((IServiceDescription)event.getProperty(IDiscoveryEvent.SERVICE)));
 		}
 
 		private Map<IServiceID,ImportDeclaration> declarations 			= new ConcurrentHashMap<>();
@@ -461,8 +558,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				unrenewedServices.addAll(declarations.keySet());
 				
 				for (IServiceDescription service : services) {
-					if (declarations.containsKey(service.getId())) {
-						unrenewedServices.remove(service.getId());
+					//TODO service.getId() --> service.getID()
+					if (declarations.containsKey(service.getID())) {
+						//TODO service.getId() --> service.getID()
+						unrenewedServices.remove(service.getID());
 					}
 					else {
 						discoveredServices.add(service);
@@ -485,7 +584,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			try {
 			
 				ImportDeclaration declaration = ServiceDeclaration.from(service);
-				declarations.put(service.getId(),declaration);
+				//TODO service.getId() --> service.getID()
+				declarations.put(service.getID(),declaration);
 				pendingDeclarations.put(declaration);
 
 			} catch (InterruptedException e) {
@@ -506,6 +606,46 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			pendingDeclarations.clear();
 		}
 
+	}
+
+	//TODO inherited methods from IMediator, can be empty
+	@Override
+	public void addPlugin(IPlugin arg0, IEnqueue arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void addProcessor(IFilter arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public IDynamicRouter<IEvent> getDispatcher() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IMediatorID getMediatorID() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID arg0) {
+		List<IServiceDescription> list = new ArrayList<>();
+		for(IServiceDescription s : exportedServices.keySet())  {
+			list.add(s);
+		}
+		return list;
+	}
+
+	@Override
+	public void setContextManager(IContextManagement arg0) {
+		// TODO Auto-generated method stub
+		
 	}
 
 

@@ -55,6 +55,18 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+		
+		<repository>
+			<id>nexus</id>
+			<name>nexus-external-repository</name>
+			<url>https://wi2bc11.bwl.uni-mannheim.de:8081/content/repositories/external/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
 	</repositories>
 	
     <dependencies>
@@ -105,10 +117,9 @@
 		</dependency>
 		
 		<dependency>
-		    <groupId>org.jdom</groupId>
-		    <artifactId>jdom2</artifactId>
-		    <version>2.0.6</version>
-		    <scope>runtime</scope>
+			<groupId>de.mannheim.wifo2.xware</groupId>
+			<artifactId>distribution-for-rose</artifactId>
+			<version>0.0.1</version>
 		</dependency>
 						
     </dependencies>
@@ -117,26 +128,6 @@
 	<build>
 	
 		<plugins>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.5.1</version>
-				<executions>
-					<execution>
-						<id>copy-xware-unbundled-dependencies</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<includeArtifactIds>jdom2</includeArtifactIds>
-							<excludeTransitive>true</excludeTransitive>
-							<outputDirectory>${project.build.directory}/lib</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 
 			<plugin>
 				<groupId>org.apache.felix</groupId>
@@ -150,16 +141,11 @@
 			            <Include-Resource>{maven-resources},
                           META-INF/NOTICE = NOTICE
                         </Include-Resource>
-                        <Embed-Dependency>
-                        	*;scope=runtime;groupId=org.jdom
-                        </Embed-Dependency>
-                        <Embed-Directory>lib</Embed-Directory>
                         <Private-Package>
                         	fr.liglab.adele.iop.device.*,
                         	de.mannheim.wifo2.*
                         </Private-Package>
 						<Import-Package>
-                        	!org.jdom.*,
                         	*
                         </Import-Package>
                         <Export-Package>
