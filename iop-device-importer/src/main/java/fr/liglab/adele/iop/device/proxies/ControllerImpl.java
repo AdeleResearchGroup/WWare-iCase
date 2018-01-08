@@ -22,7 +22,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -307,31 +306,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mThread.setDaemon(true);
 		mThread.start();
 		mIsRunning = true;
-		
-		properties = new HashMap<>();
-		properties.put("INTERACTION_PARADIGM", (byte)1);
-		properties.put("CONNECTION_MANAGER", "de.mannheim.wifo2.iop.plugin.connectionmanager.impl.ConnectionManager");
-		properties.put("FUNCTION_ANNOUNCEMENT", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.DeviceAnnouncement");
-		properties.put("MESSAGE_HANDLER", "de.mannheim.wifo2.iop.plugin.icasa.ICasaEncodingHandler");
-		properties.put("CONNECTION_MANAGER_ADVERTISEMENT_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.MulticastGroup");
-		properties.put("CONNECTION_MANAGER_LOOKUP_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
-		properties.put("CONNECTION_MANAGER_SERVER_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
-		properties.put("CONNECTION_MANAGER_DELETE_AFTER_SEND", false);
-		properties.put("CONNECTION_ADVERTISEMENT_SERVER", "de.mannheim.wifo2.iop.plugin.connection.impl.MulticastGroup");
-		properties.put("CONNECTION_SERVER", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPServerConnection");
-		properties.put("CONNECTION_SERVER_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
-		properties.put("CONNECTION_LOOKUP_CLIENT_CLASS", "de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO");
-		properties.put("FUNCTION_ADVERTISEMENT", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleAdvertisement");
-		properties.put("FUNCTION_INVOCATION", "de.mannheim.wifo2.iop.plugin.function.application.impl.SimpleInvocation");
-		properties.put("FUNCTION_LOOKUP", "de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleLookup");
-		properties.put("FUNCTION_MATCHING", "de.mannheim.wifo2.iop.plugin.function.matching.impl.SyntacticMatching");
-		properties.put("FUNCTION_ROUTING", "de.mannheim.wifo2.iop.plugin.function.routing.impl.SimpleRouting");
-		properties.put("FUNCTION_EVENTING", "de.mannheim.wifo2.iop.plugin.function.eventing.impl.SimpleEventing");
-		properties.put("FUNCTION_EXCEPTION_HANDLING", "de.mannheim.wifo2.iop.plugin.function.exceptionhandling.impl.SimpleExceptionHandling");
-		properties.put("FUNCTION_SLEEP_TIME", 50);
-		properties.put("LEASE_TIMEOUT", 40000);
-		properties.put("INVOCATION_REPLY", false);
-		properties.put("EVENTING_SUPPORT", true);
 		
 		//TODO changed to RosePlugin from APlugin as APlugin is abstract
 		rosePlugin = new RosePlugin("iCasa over IOP", this, properties);

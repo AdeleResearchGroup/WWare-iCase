@@ -17,7 +17,8 @@ CONNECTION_ADVERTISEMENT_SERVER=de.mannheim.wifo2.iop.plugin.connection.impl.Mul
 CONNECTION_LOOKUP_CLIENT_CLASS=de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO=java.lang.String
 CONNECTION_SERVER=de.mannheim.wifo2.iop.plugin.connection.impl.TCPServerConnection=java.lang.String
 CONNECTION_SERVER_CLIENT_CLASS=de.mannheim.wifo2.iop.plugin.connection.impl.TCPClientConnectionOIOO=java.lang.String
-FUNCTION_ANNOUNCEMENT=de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleAnnouncement=java.lang.String
+FUNCTION_ANNOUNCEMENT=de.mannheim.wifo2.iop.plugin.function.discovery.impl.DeviceAnnouncement=java.lang.String
+MESSAGE_HANDLER=de.mannheim.wifo2.iop.plugin.icasa.ICasaEncodingHandler=java.lang.String
 FUNCTION_ADVERTISEMENT=de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleAdvertisement=java.lang.String
 FUNCTION_INVOCATION=de.mannheim.wifo2.iop.plugin.function.application.impl.SimpleInvocation=java.lang.String
 FUNCTION_LOOKUP=de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleLookup=java.lang.String
