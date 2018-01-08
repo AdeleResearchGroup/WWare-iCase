@@ -103,7 +103,7 @@ public class IOPBinaryLight implements GenericDevice, BinaryLight, IOPService {
 	public void turnOff() {
 		try {
 			iopInvocationHandler.invoke(remoteServiceId,
-					new Call("turnOff", Collections.emptyList(), null),
+					new Call("setPowerStatus", Collections.singletonList(new Parameter("status", false)), null),
 					IOPInvocationHandler.TIMEOUT);
 			
 			status = false;
@@ -116,7 +116,7 @@ public class IOPBinaryLight implements GenericDevice, BinaryLight, IOPService {
 	public void turnOn() {
 		try {
 			iopInvocationHandler.invoke(remoteServiceId,
-					new Call("turnOn", Collections.emptyList(), null),
+					new Call("setPowerStatus", Collections.singletonList(new Parameter("status", true)), null),
 					IOPInvocationHandler.TIMEOUT);
 			
 			status = true;
