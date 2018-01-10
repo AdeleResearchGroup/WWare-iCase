@@ -21,7 +21,7 @@ FUNCTION_ANNOUNCEMENT=de.mannheim.wifo2.iop.plugin.function.discovery.impl.Devic
 MESSAGE_HANDLER=de.mannheim.wifo2.iop.plugin.icasa.ICasaEncodingHandler=java.lang.String
 FUNCTION_ADVERTISEMENT=de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleAdvertisement=java.lang.String
 FUNCTION_INVOCATION=de.mannheim.wifo2.iop.plugin.function.application.impl.SimpleInvocation=java.lang.String
-FUNCTION_LOOKUP=de.mannheim.wifo2.iop.plugin.function.discovery.impl.SimpleLookup=java.lang.String
+FUNCTION_LOOKUP=de.mannheim.wifo2.iop.lookup.ICasaLookup=java.lang.String
 FUNCTION_MATCHING=de.mannheim.wifo2.iop.plugin.function.matching.impl.SyntacticMatching=java.lang.String
 FUNCTION_ROUTING=de.mannheim.wifo2.iop.plugin.function.routing.impl.SimpleRouting=java.lang.String
 FUNCTION_EVENTING=de.mannheim.wifo2.iop.plugin.function.eventing.impl.SimpleEventing=java.lang.String

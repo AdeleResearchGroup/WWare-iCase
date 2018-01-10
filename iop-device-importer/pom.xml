@@ -134,6 +134,12 @@
 			<groupId>de.mannheim.wifo2.xware</groupId>
 			<artifactId>distribution-for-rose</artifactId>
 			<version>0.0.1</version>
+			<exclusions>
+				<exclusion>
+          			<groupId>de.mannheim.wifo2.xware</groupId>
+          			<artifactId>*</artifactId>
+        		</exclusion>
+			</exclusions>
 		</dependency>
 						
     </dependencies>

@@ -302,7 +302,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		mIsRunning = false;
 		mQueue = new Queue<IEvent>();
 		
-		mThread = new Thread(this);
+		mThread = new Thread(this,"IOPControlller-Runner");
 		mThread.setDaemon(true);
 		mThread.start();
 		mIsRunning = true;
@@ -501,7 +501,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 		}
 		
 		public void dispatch(IDiscoveryEvent event) {
-			updateDeclarations(Collections.singletonList((IServiceDescription)event.getProperty(IDiscoveryEvent.SERVICE)));
+			//updateDeclarations(Collections.singletonList((IServiceDescription)event.getProperty(IDiscoveryEvent.SERVICE)));
 		}
 
 		private Map<IServiceID,ImportDeclaration> declarations 			= new ConcurrentHashMap<>();

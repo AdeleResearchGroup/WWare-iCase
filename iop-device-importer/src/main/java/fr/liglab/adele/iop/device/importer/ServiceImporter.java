@@ -236,6 +236,8 @@ public class ServiceImporter extends AbstractImporterComponent  {
 		for (Factory extension : functionalExtensions.keySet()) {
 			
 			Set<String> provided	= new HashSet<>(Arrays.asList(functionalExtensions.get(extension)));
+			provided.remove(IOPService.class.getName());
+			
 			boolean intersects 		= expectedInterfaces.removeAll(provided);
 			
 			if (intersects) {
