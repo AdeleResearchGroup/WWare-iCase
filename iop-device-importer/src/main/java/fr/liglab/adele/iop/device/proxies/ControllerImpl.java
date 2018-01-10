@@ -390,17 +390,22 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 					rosePlugin.enqueue(responseEvent);
 					
-					/*
-					 * An send back my own lookup request
-					 */
-					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(),
-							lookupRequest);
-					rosePlugin.enqueue(dualLookupEvent);
+//					/*
+//					 * An send back my own lookup request
+//					 */
+//					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+//							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(),
+//							lookupRequest);
+//					dualLookupEvent.setReadyToSend(true);
+//					
+//					rosePlugin.enqueue(dualLookupEvent);
 					}
 					//outgoing
 					{
-						rosePlugin.getConnectionManager().send(lookupEvent);
+						lookupEvent.setReadyToSend(true);
+						
+						rosePlugin.enqueue(lookupEvent);
+//						rosePlugin.getConnectionManager().send(lookupEvent);
 					}
 					 
 					break;
