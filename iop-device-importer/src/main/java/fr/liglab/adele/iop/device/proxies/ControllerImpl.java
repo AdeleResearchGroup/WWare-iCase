@@ -35,7 +35,6 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import org.osgi.framework.BundleContext;
 
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -54,6 +53,7 @@ import de.mannheim.wifo2.iop.context.i.IContextManagement;
 import de.mannheim.wifo2.iop.event.EDiscoveryType;
 import de.mannheim.wifo2.iop.event.IDynamicRouter;
 import de.mannheim.wifo2.iop.event.IEvent;
+import de.mannheim.wifo2.iop.event.i.IAnnouncementEvent;
 import de.mannheim.wifo2.iop.event.i.IApplicationEvent;
 import de.mannheim.wifo2.iop.event.i.IApplicationResponseEvent;
 import de.mannheim.wifo2.iop.event.i.IDiscoveryEvent;
@@ -86,12 +86,12 @@ import de.mannheim.wifo2.iop.service.access.impl.Call;
 import de.mannheim.wifo2.iop.service.access.impl.Parameter;
 import de.mannheim.wifo2.iop.service.matching.SimpleMatchRequest;
 import de.mannheim.wifo2.iop.service.model.IFunctionality;
+import de.mannheim.wifo2.iop.service.model.IProperty;
 import de.mannheim.wifo2.iop.service.model.IServiceDescription;
-
+import de.mannheim.wifo2.iop.service.model.impl.Operator;
 import de.mannheim.wifo2.iop.util.i.IEnqueue;
 import de.mannheim.wifo2.xware.plugin.RosePlugin;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
-
 
 import fr.liglab.adele.iop.device.api.IOPController;
 import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
@@ -100,39 +100,40 @@ import fr.liglab.adele.iop.device.api.IOPPublisher;
 
 import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
 
+@ContextEntity(coreServices = { IOPController.class, })
+@Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class, IOPInvocationHandler.class,
+		IOPLookupService.class, IOPPublisher.class })
 
-@ContextEntity(coreServices = {IOPController.class, })
-@Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class, IOPInvocationHandler.class, IOPLookupService.class, IOPPublisher.class })
-
-//TODO changed IEnqueue to IMediator
-public class ControllerImpl extends AbstractDiscoveryComponent implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IMediator, Runnable   {
+// TODO changed IEnqueue to IMediator
+public class ControllerImpl extends AbstractDiscoveryComponent
+		implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IMediator, Runnable {
 
 	private static final boolean EVALUATION = true;
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(ControllerImpl.class);
 
-	@Property(name=fr.liglab.adele.cream.model.ContextEntity.CONTEXT_ENTITY_ID)
+	@Property(name = fr.liglab.adele.cream.model.ContextEntity.CONTEXT_ENTITY_ID)
 	private String contextId;
 
 	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.PROPERTIES)
-	private Map<String,Object> properties;
+	private Map<String, Object> properties;
 
-	//TODO changed to RosePlugin
-	private RosePlugin 			rosePlugin;
-	private Thread 				mThread;
-	private Queue<IEvent> 		mQueue;
-	private boolean 			mIsRunning;
+	// TODO changed to RosePlugin
+	private RosePlugin rosePlugin;
+	private Thread mThread;
+	private Queue<IEvent> mQueue;
+	private boolean mIsRunning;
 
-	private ILocalServiceID 	myServiceId;
+	private ILocalServiceID myServiceId;
 
-	private Map<Integer,IApplicationEvent> pendingInvocations 	= new ConcurrentHashMap<>();
-	private Map<Integer,Object> pendingResponses 				= new ConcurrentHashMap<>();
+	private Map<Integer, IApplicationEvent> pendingInvocations = new ConcurrentHashMap<>();
+	private Map<Integer, Object> pendingResponses = new ConcurrentHashMap<>();
 
 	private IOPServiceDeclarationManager importManager;
-	private Map<IServiceDescription,IOPInvocationHandler> exportedServices = new ConcurrentHashMap<>();
+	private Map<IServiceDescription, IOPInvocationHandler> exportedServices = new ConcurrentHashMap<>();
 
-	private IMatchRequest lookupRequest	= new SimpleMatchRequest(new String[0]);
-	
+	private IMatchRequest lookupRequest = new SimpleMatchRequest(new String[0]);
+
 	/**
 	 * Constructor
 	 */
@@ -146,24 +147,24 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	}
 
 	/**
-	 * A value used to represent a result of null. This is required as the {@link #pendingResponses} table
-	 * do not accept null values or keys
+	 * A value used to represent a result of null. This is required as the
+	 * {@link #pendingResponses} table do not accept null values or keys
 	 */
 	private static final Object NULL_RESULT = new Object();
-	
+
 	/**
 	 * Send an invocation request to the specified service
 	 */
 	@Override
 	public Object invoke(IServiceID target, ICall call, long timeout) throws TimeoutException {
-		
+
 		int eventId = EventID.getInstance().getNextID();
-		
-		IInteraction interaction = (call.expectsResult() ? 
-				new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE) : 
-				new Interaction(IInteraction.SEMANTICS_CS_ONE_WAY)); 
-		ApplicationEvent invocation = new ApplicationEvent(new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS), 
-											eventId, myServiceId, target, call, interaction);
+
+		IInteraction interaction = (call.expectsResult() ? new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE)
+				: new Interaction(IInteraction.SEMANTICS_CS_ONE_WAY));
+		ApplicationEvent invocation = new ApplicationEvent(
+				new PluginID("InvocationGenerator", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS),
+				eventId, myServiceId, target, call, interaction);
 
 		/*
 		 * If no response expected, just return to the caller
@@ -172,16 +173,17 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 			mQueue.enqueue(invocation);
 			return null;
 		}
-		
+
 		/*
-		 * Send the request and wait for response (that will arrive concurrently in another thread)
+		 * Send the request and wait for response (that will arrive concurrently in
+		 * another thread)
 		 * 
 		 */
-		pendingInvocations.put(eventId,invocation);
+		pendingInvocations.put(eventId, invocation);
 		mQueue.enqueue(invocation);
 
 		if (pendingInvocations.containsKey(eventId)) {
-			synchronized(invocation) {
+			synchronized (invocation) {
 				try {
 					invocation.wait(timeout);
 				} catch (InterruptedException e) {
@@ -189,27 +191,26 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				}
 			}
 		}
-		
-		
+
 		/*
 		 * Get the response if available
 		 */
-		boolean timeoutExpired = ! pendingResponses.containsKey(eventId);
-		
+		boolean timeoutExpired = !pendingResponses.containsKey(eventId);
+
 		if (timeoutExpired) {
 			pendingInvocations.remove(eventId);
 			throw new TimeoutException();
 		}
-			
+
 		Object result = pendingResponses.remove(eventId);
 		if (result == NULL_RESULT) {
 			result = null;
 		}
-			
+
 		return result;
-			 
+
 	}
-	
+
 	/**
 	 * Handle responses to ongoing invocations
 	 */
@@ -221,57 +222,59 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				result = parameter.getValue();
 			}
 		}
-		
+
 		boolean invocationIsWaiting = pendingInvocations.containsKey(response.getID());
-		
+
 		if (invocationIsWaiting) {
-			
+
 			IApplicationEvent invocation = pendingInvocations.remove(response.getID());
 			if (invocation != null) {
 				pendingResponses.put(response.getID(), result != null ? result : NULL_RESULT);
-				synchronized(invocation) {
+				synchronized (invocation) {
 					invocation.notifyAll();
 				}
-				
+
 			}
-			
+
 		}
 
 	}
-	
-	@Override
-	public void publish(String id, String componentName, List<IFunctionality> functionalities, IOPInvocationHandler handler) {
 
-		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
-		IServiceDescription service = new LocalService(serviceId, componentName, functionalities, Collections.emptyList());
-		
+	@Override
+	public void publish(String id, String componentName, List<IFunctionality> functionalities,
+			IOPInvocationHandler handler) {
+
+		LocalServiceID serviceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
+		IServiceDescription service = new LocalService(serviceId, componentName, functionalities,
+				Collections.emptyList());
+
 		exportedServices.put(service, handler);
 	}
 
 	@Override
 	public void unpublish(String id) {
-		LocalServiceID serviceId 	= new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
+		LocalServiceID serviceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
 		IServiceDescription service = new LocalService(serviceId, id, Collections.emptyList(), Collections.emptyList());
 		exportedServices.remove(service);
 	}
 
-
 	@Override
 	public void consider(String[] considered) {
-		String current[] 		= (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
-		
-		Set<String> updated 	= current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
-		updated.addAll(Arrays.asList(considered));
+		String current[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
 
-		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]));
+		Set<String> updated = current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
+		updated.addAll(Arrays.asList(considered));
+		
+		IProperty property = new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT, "location", "apartment1", Operator.EQUAL);
+		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]), Collections.singletonList(property));
 	}
 
 	@Override
 	public void discard(String[] discarded) {
-		
-		String current[] 		= (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
-		
-		Set<String> updated 	= current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
+
+		String current[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
+
+		Set<String> updated = current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
 		updated.removeAll(Arrays.asList(discarded));
 		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]));
 	}
@@ -285,7 +288,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	public void none() {
 		lookupRequest = new SimpleMatchRequest(new String[0]);
 	}
-
 
 	/**
 	 * LifeCycle
@@ -301,24 +303,26 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		mIsRunning = false;
 		mQueue = new Queue<IEvent>();
-		
-		mThread = new Thread(this,"IOPControlller-Runner");
+
+		mThread = new Thread(this, "IOPControlller-Runner");
 		mThread.setDaemon(true);
 		mThread.start();
 		mIsRunning = true;
-		
-		//TODO changed to RosePlugin from APlugin as APlugin is abstract
+
+		// TODO changed to RosePlugin from APlugin as APlugin is abstract
 		rosePlugin = new RosePlugin("iCasa over IOP", this, properties);
 		rosePlugin.start();
 
 		myServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
-		
-		//TODO IEventingEvent --> excluded discovery to IDiscoveryEvent (DiscoveryEvent, EDiscoveryType)
-		IDiscoveryEvent registrationEvent = 	new DiscoveryEvent(rosePlugin.getID(), EDiscoveryType.SERVICE_REGISTRATION);
-		registrationEvent.addProperty(IDiscoveryEvent.SERVICE, new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList()));
-		
+
+		// TODO IEventingEvent --> excluded discovery to IDiscoveryEvent
+		// (DiscoveryEvent, EDiscoveryType)
+		IDiscoveryEvent registrationEvent = new DiscoveryEvent(rosePlugin.getID(), EDiscoveryType.SERVICE_REGISTRATION);
+		registrationEvent.addProperty(IDiscoveryEvent.SERVICE,
+				new LocalService(myServiceId, this.getName(), Collections.emptyList(), Collections.emptyList()));
+
 		rosePlugin.enqueue(registrationEvent);
-		
+
 	}
 
 	@Invalidate
@@ -327,11 +331,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		mIsRunning = false;
 		rosePlugin.stop();
-		
+
 		importManager.dispose();
 		importManager = null;
 	}
-
 
 	@Override
 	public void enqueue(IEvent message) {
@@ -342,144 +345,133 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	public void run() {
 		PrintWriter writer = null;
 		try {
-			writer = new PrintWriter(
-					System.getProperty("user.home") + File.separator + "iCasa-log" 
-							+ System.currentTimeMillis() + ".txt", "UTF-8");
+			writer = new PrintWriter(System.getProperty("user.home") + File.separator + "iCasa-log"
+					+ System.currentTimeMillis() + ".txt", "UTF-8");
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (UnsupportedEncodingException e1) {
 			e1.printStackTrace();
 		}
-		
-		while(mIsRunning)  {
-			if(!mQueue.isEmpty())  {				
+
+		while (mIsRunning) {
+			if (!mQueue.isEmpty()) {
 				IEvent event = mQueue.dequeue();
 
-				switch(event.getType()) {
+				switch (event.getType()) {
 				case IEvent.EVENT_LOOKUPRESPONSE: {
 					if (importManager != null) {
 						importManager.dispatch((ILookupResponseEvent) event);
 					}
 					break;
 				}
-				case IEvent.EVENT_DISCOVERY:  {
-					IDiscoveryEvent discEvent = (IDiscoveryEvent) event;
-					if(discEvent.getDiscoveryType() == EDiscoveryType.SERVICE_REGISTRATION)  {
-						if (importManager != null) {
-							importManager.dispatch(discEvent);
-						}
-						break;
-					}
-				}
-				case IEvent.EVENT_LOOKUP : {
-					ILookupEvent lookupEvent = (ILookupEvent) event;
-					
-					//incoming
-					if (rosePlugin != null && !lookupEvent.getTargetID().equals(rosePlugin.getID())) {
-					/*
-					 * Send response with exported services
-					 */
-					List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
-					
-					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
-					
-					ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService,lookupEvent.getID(), 
-							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(), 
-							matchedServices);
-					responseEvent.setReadyToSend(true);
+				case IEvent.EVENT_ANNOUNCEMENT: {
+					IAnnouncementEvent annEvent = (IAnnouncementEvent) event;
 
-					rosePlugin.enqueue(responseEvent);
+					/*
+					 * An send back my own lookup request
+					 */
+					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
+							IInteraction.INTERACTION_CS);
+					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+							(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) annEvent.getSourceID(), lookupRequest);
 					
-//					/*
-//					 * An send back my own lookup request
-//					 */
-//					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-//							(IEndpointID)lookupEvent.getTargetID(), (IEndpointID)lookupEvent.getSourceID(),
-//							lookupRequest);
-//					dualLookupEvent.setReadyToSend(true);
-//					
-//					rosePlugin.enqueue(dualLookupEvent);
-					}
-					//outgoing
-					{
-						lookupEvent.setReadyToSend(true);
-						
-						rosePlugin.enqueue(lookupEvent);
-//						rosePlugin.getConnectionManager().send(lookupEvent);
-					}
-					 
+					
+					dualLookupEvent.setReadyToSend(true);
+
+					rosePlugin.enqueue(dualLookupEvent);
+					
 					break;
 				}
-				case IEvent.EVENT_APPLICATION : {
+				case IEvent.EVENT_LOOKUP: {
+					ILookupEvent lookupEvent = (ILookupEvent) event;
+
+					// incoming
+					if (rosePlugin != null && !lookupEvent.getTargetID().equals(rosePlugin.getID())) {
+						/*
+						 * Send response with exported services
+						 */
+						List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
+
+						IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
+								IInteraction.INTERACTION_CS);
+
+						ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService, lookupEvent.getID(),
+								(IEndpointID) lookupEvent.getTargetID(), (IEndpointID) lookupEvent.getSourceID(),
+								matchedServices);
+						responseEvent.setReadyToSend(true);
+
+						rosePlugin.enqueue(responseEvent);
+					}
+
+					break;
+				}
+				case IEvent.EVENT_APPLICATION: {
 					IApplicationEvent invocation = (IApplicationEvent) event;
-					//incoming
+					// incoming
 					if (rosePlugin != null && invocation.getSource().equals(rosePlugin.getID())) {
 
-						IServiceDescription service 	= new LocalService((ILocalServiceID)invocation.getTargetID(), null, Collections.emptyList(), Collections.emptyList());
-						IOPInvocationHandler handler 	= exportedServices.get(service);
+						IServiceDescription service = new LocalService((ILocalServiceID) invocation.getTargetID(), null,
+								Collections.emptyList(), Collections.emptyList());
+						IOPInvocationHandler handler = exportedServices.get(service);
 
 						Object result = null;
-						
+
 						if (handler != null) {
 							try {
 
-								result = handler.invoke((IServiceID)invocation.getTargetID(),
-												invocation.getCall(), 
-												IOPInvocationHandler.TIMEOUT);
-								
+								result = handler.invoke((IServiceID) invocation.getTargetID(), invocation.getCall(),
+										IOPInvocationHandler.TIMEOUT);
+
 							} catch (TimeoutException e) {
 								result = null;
 							}
 						}
-							
+
 						if (result != null) {
-							PluginID componentId = new PluginID("ApplicationResponseEventGenerator", rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
-							ICall call = new Call(null, Collections.singletonList(new Parameter("result", result)), null);
-							IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(
-																			componentId,
-																			invocation.getID(),
-																			(IServiceID)invocation.getTargetID(),
-																			(IServiceID)invocation.getSourceID(), 
-																			call,
-																			new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE));
-							rosePlugin.enqueue(responseEvent);								
+							PluginID componentId = new PluginID("ApplicationResponseEventGenerator",
+									rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
+							ICall call = new Call(null,
+									Collections.singletonList(new Parameter("result", result, null)), null);
+							IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(componentId,
+									invocation.getID(), (IServiceID) invocation.getTargetID(),
+									(IServiceID) invocation.getSourceID(), call,
+									new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE));
+							rosePlugin.enqueue(responseEvent);
 
 						}
-						
+
 					}
-					//outgoing
+					// outgoing
 					else {
 						invocation.setReadyToSend(true);
-						
-						if(EVALUATION)  {
+
+						if (EVALUATION) {
 							writer.print(System.nanoTime());
 						}
 						rosePlugin.getConnectionManager().send(invocation);
 					}
 					break;
 				}
-				case IEvent.EVENT_APPLICATIONRESPONSE : {
+				case IEvent.EVENT_APPLICATIONRESPONSE: {
 					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
-					//incoming
+					// incoming
 					if (rosePlugin != null && response.getSource().equals(rosePlugin.getID())) {
-						if(EVALUATION)  {
+						if (EVALUATION) {
 							writer.println("\t" + System.nanoTime());
 							writer.flush();
 						}
-					invocationResponse(response);
-					}
-					else  {
+						invocationResponse(response);
+					} else {
 						event.setReadyToSend(true);
 						rosePlugin.getConnectionManager().send(event);
 					}
 					break;
 				}
-				case IEvent.EVENT_EVENTING : {
+				case IEvent.EVENT_EVENTING: {
 					break;
 				}
 				}
-			}
-			else  {
+			} else {
 				try {
 					Thread.sleep(1);
 				} catch (InterruptedException e) {
@@ -487,37 +479,29 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				}
 			}
 		}
-		
-		
+
 		System.out.println("**********************************************");
 	}
 
-	
-
 	private class IOPServiceDeclarationManager extends Thread {
-		
+
 		public IOPServiceDeclarationManager() {
 			super("IOPServiceDeclarationManager");
 			setDaemon(true);
 		}
-		
+
 		public void dispatch(ILookupResponseEvent event) {
 			updateDeclarations(event.getServices());
 		}
-		
-		public void dispatch(IDiscoveryEvent event) {
-			//updateDeclarations(Collections.singletonList((IServiceDescription)event.getProperty(IDiscoveryEvent.SERVICE)));
-		}
 
-		private Map<IServiceID,ImportDeclaration> declarations 			= new ConcurrentHashMap<>();
+		private Map<IServiceID, ImportDeclaration> declarations = new ConcurrentHashMap<>();
 
-		private BlockingQueue<ImportDeclaration > pendingDeclarations 	= new LinkedBlockingQueue<>();
-		
-				
+		private BlockingQueue<ImportDeclaration> pendingDeclarations = new LinkedBlockingQueue<>();
+
 		@Override
 		public void run() {
 			while (declarations != null) {
-				
+
 				try {
 					ImportDeclaration declaration = pendingDeclarations.take();
 					registerImportDeclaration(declaration);
@@ -530,41 +514,40 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 		private final void updateDeclarations(List<? extends IServiceDescription> services) {
 
-			Set<IServiceID> unrenewedServices 			= new HashSet<>();
-			Set<IServiceDescription> discoveredServices	= new HashSet<>();
-			
+			Set<IServiceID> unrenewedServices = new HashSet<>();
+			Set<IServiceDescription> discoveredServices = new HashSet<>();
+
 			synchronized (this) {
 				unrenewedServices.addAll(declarations.keySet());
-				
+
 				for (IServiceDescription service : services) {
-					//TODO service.getId() --> service.getID()
+					// TODO service.getId() --> service.getID()
 					if (declarations.containsKey(service.getID())) {
-						//TODO service.getId() --> service.getID()
+						// TODO service.getId() --> service.getID()
 						unrenewedServices.remove(service.getID());
-					}
-					else {
+					} else {
 						discoveredServices.add(service);
 					}
 				}
-				
+
 			}
-			
+
 			for (IServiceDescription discovered : discoveredServices) {
 				createDeclaration(discovered);
 			}
-			
+
 			for (IServiceID unrenewed : unrenewedServices) {
 				removeDeclaration(unrenewed);
 			}
 		}
-		
+
 		private final void createDeclaration(IServiceDescription service) {
 
 			try {
-			
+
 				ImportDeclaration declaration = ServiceDeclaration.from(service);
-				//TODO service.getId() --> service.getID()
-				declarations.put(service.getID(),declaration);
+				// TODO service.getId() --> service.getID()
+				declarations.put(service.getID(), declaration);
 				pendingDeclarations.put(declaration);
 
 			} catch (InterruptedException e) {
@@ -578,7 +561,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 				unregisterImportDeclaration(declaration);
 			}
 		}
-		
+
 		public synchronized void dispose() {
 			declarations.clear();
 			declarations = null;
@@ -587,17 +570,17 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 
 	}
 
-	//TODO inherited methods from IMediator, can be empty
+	// TODO inherited methods from IMediator, can be empty
 	@Override
 	public void addPlugin(IPlugin arg0, IEnqueue arg1) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void addProcessor(IFilter arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -615,7 +598,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	@Override
 	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID arg0) {
 		List<IServiceDescription> list = new ArrayList<>();
-		for(IServiceDescription s : exportedServices.keySet())  {
+		for (IServiceDescription s : exportedServices.keySet()) {
 			list.add(s);
 		}
 		return list;
@@ -624,8 +607,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent implements IOPCon
 	@Override
 	public void setContextManager(IContextManagement arg0) {
 		// TODO Auto-generated method stub
-		
-	}
 
+	}
 
 }

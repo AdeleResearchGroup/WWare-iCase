@@ -129,50 +129,55 @@
 			<groupId>fr.liglab.adele.cream</groupId>
 			<artifactId>cream.runtime.facilities</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>de.mannheim.wifo2.xware</groupId>
 			<artifactId>distribution-for-rose</artifactId>
 			<version>0.0.1</version>
 			<exclusions>
 				<exclusion>
-          			<groupId>de.mannheim.wifo2.xware</groupId>
-          			<artifactId>*</artifactId>
-        		</exclusion>
+					<groupId>de.mannheim.wifo2.xware</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.net.httpserver</groupId>
+					<artifactId>http</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
-						
-    </dependencies>
-	
-	
+
+	</dependencies>
+
+
 	<build>
-	
+
 		<plugins>
 
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
 				<extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>
-                            ${project.artifactId}
-                        </Bundle-SymbolicName>
-			            <Include-Resource>{maven-resources},
-                          META-INF/NOTICE = NOTICE
-                        </Include-Resource>
-                        <Private-Package>
-                        	fr.liglab.adele.iop.device.*,
-                        	de.mannheim.wifo2.*
-                        </Private-Package>
+				<configuration>
+					<instructions>
+						<Bundle-SymbolicName>
+							${project.artifactId}
+						</Bundle-SymbolicName>
+						<Include-Resource>{maven-resources},
+							META-INF/NOTICE = NOTICE
+						</Include-Resource>
+						<Private-Package>
+							fr.liglab.adele.iop.device.*,
+							de.mannheim.wifo2.*
+						</Private-Package>
 						<Import-Package>
-                        	*
-                        </Import-Package>
-                        <Export-Package>
-                        	fr.liglab.adele.iop.device.api.*
-                        </Export-Package>                     
-                    </instructions>
-                </configuration>
+							!com.sun.net.httpserver,
+							*
+						</Import-Package>
+						<Export-Package>
+							fr.liglab.adele.iop.device.api.*
+						</Export-Package>
+					</instructions>
+				</configuration>
 			</plugin>
 
 			<plugin>
