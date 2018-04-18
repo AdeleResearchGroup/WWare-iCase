@@ -59,7 +59,7 @@ public class ServiceExporter extends AbstractExporterComponent implements IOPInv
 	@ServiceProperty(name = Factory.INSTANCE_NAME_PROPERTY)
 	private String name;
 
-	@ServiceProperty(name = "target", value = "(&(scope=generic)(iop.exported.service.id=*)(iop.exported.service.capabilities=*))")
+	@ServiceProperty(name = "target", value = "(&(scope=generic)(iop.exported.service.id=*)(iop.exported.service.functionalities=*))")
 	private String filter;
 
 	@Requires(optional=false,proxy=false)
@@ -95,7 +95,7 @@ public class ServiceExporter extends AbstractExporterComponent implements IOPInv
 		
 		ServiceDeclaration declaration = new ServiceDeclaration(exportDeclaration);
 		exportedServices.put(declaration.getId(),declaration.getService());
-		publisher.publish(declaration.getId(), declaration.getComponentId(), declaration.getFunctionalities(), this);
+		publisher.publish(declaration.getId(), declaration.getComponentId(), declaration.getFunctionalities(), declaration.getProperties(), this);
 	}
 
 	@Override

@@ -26,19 +26,22 @@ import de.mannheim.wifo2.iop.service.model.IFunctionality;
 public class ServiceDeclaration {
 
 
-    public final static String SERVICE 				= "iop.exported.service";
+    public final static String SERVICE 					= "iop.exported.service";
 
-    public final static String COMPONENT_ID			= "iop.exported.component.id";
+    public final static String COMPONENT_ID				= "iop.exported.component.id";
 
-    public final static String SERVICE_ID 			= "iop.exported.service.id";
+    public final static String SERVICE_ID 				= "iop.exported.service.id";
 
-    public final static String SERVICE_CAPABILITIES = "iop.exported.service.capabilities";
+    public final static String SERVICE_FUNCTIONALITIES	= "iop.exported.service.functionalities";
+
+    public final static String SERVICE_PROPERTIES 		= "iop.exported.service.properties";
 
 
     private final String 				id;
     private final String				componentId;
     private final List<IFunctionality>	functionalities;
     private final Object				service;
+    private final Map<String,?> 		properties;
     
 	@SuppressWarnings("unchecked")
 	public ServiceDeclaration(ExportDeclaration declaration) {
@@ -46,7 +49,8 @@ public class ServiceDeclaration {
         id 				= (String) metadata.get(SERVICE_ID);
         componentId		= (String) metadata.get(COMPONENT_ID);
         service			= metadata.get(SERVICE);
-        functionalities	= (List<IFunctionality>) metadata.get(SERVICE_CAPABILITIES);
+        functionalities	= (List<IFunctionality>) metadata.get(SERVICE_FUNCTIONALITIES);
+        properties		= (Map<String,?>) metadata.get(SERVICE_PROPERTIES);
     }
 
     public String getId() {
@@ -65,14 +69,19 @@ public class ServiceDeclaration {
     	return service;
     }
     
-    public static ExportDeclaration from(Object service, String id, List<IFunctionality> functionalities, String componentId) {
+    public Map<String,?> getProperties() {
+    	return properties;
+    }
+
+    public static ExportDeclaration from(String componentId, Object service, String serviceId, List<IFunctionality> functionalities, Map<String,?> properties) {
     	
     	return ExportDeclarationBuilder.empty()
     			.key("scope").value("generic")
-    			.key(SERVICE).value(service)
     			.key(COMPONENT_ID).value(componentId)
-    			.key(SERVICE_ID).value(id)
-    			.key(SERVICE_CAPABILITIES).value(functionalities)
+    			.key(SERVICE).value(service)
+    			.key(SERVICE_ID).value(serviceId)
+    			.key(SERVICE_FUNCTIONALITIES).value(functionalities)
+    			.key(SERVICE_PROPERTIES).value(properties)
     			.build();
     }
 

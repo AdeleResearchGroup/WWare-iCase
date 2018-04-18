@@ -91,6 +91,7 @@ import de.mannheim.wifo2.iop.service.model.IServiceDescription;
 import de.mannheim.wifo2.iop.service.model.impl.Operator;
 import de.mannheim.wifo2.iop.util.i.IEnqueue;
 import de.mannheim.wifo2.xware.plugin.RosePlugin;
+import de.mannheim.wifo2.iop.util.PluginConstants;
 import de.mannheim.wifo2.iop.util.datastructure.Queue;
 
 import fr.liglab.adele.iop.device.api.IOPController;
@@ -132,7 +133,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	private IOPServiceDeclarationManager importManager;
 	private Map<IServiceDescription, IOPInvocationHandler> exportedServices = new ConcurrentHashMap<>();
 
-	private IMatchRequest lookupRequest = new SimpleMatchRequest(new String[0]);
+	private List<IMatchRequest> lookupRequests = new ArrayList<>();
 
 	/**
 	 * Constructor
@@ -241,12 +242,18 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void publish(String id, String componentName, List<IFunctionality> functionalities,
+	public void publish(String id, String componentName, List<IFunctionality> functionalities, Map<String,?> properties,
 			IOPInvocationHandler handler) {
 
 		LocalServiceID serviceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
-		IServiceDescription service = new LocalService(serviceId, componentName, functionalities,
-				Collections.emptyList());
+		
+		List<IProperty> exportedProperties	= new ArrayList<>();
+		for (String property : properties.keySet()) {
+			exportedProperties.add(new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT, 
+					property, properties.get(property).toString(), Operator.EQUAL));
+		}
+		
+		IServiceDescription service = new LocalService(serviceId, componentName, functionalities,exportedProperties);
 
 		exportedServices.put(service, handler);
 	}
@@ -259,34 +266,54 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void consider(String[] considered) {
-		String current[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
-
-		Set<String> updated = current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
-		updated.addAll(Arrays.asList(considered));
+	public void consider(String[] considered, Map<String,String> query) {
 		
-		IProperty property = new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT, "location", "apartment1", Operator.EQUAL);
-		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]), Collections.singletonList(property));
+		List<IProperty> properties = new ArrayList<IProperty>();
+		for (String property : query.keySet()) {
+			properties.add( new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT,
+					property, query.get(property), Operator.EQUAL)
+			);
+		}
+
+		lookupRequests.add(new SimpleMatchRequest(considered, properties));
 	}
 
 	@Override
 	public void discard(String[] discarded) {
+		
+		IMatchRequest found = null;
+		for (IMatchRequest lookupRequest : lookupRequests) {
+			String requested[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
+			if (Arrays.equals(requested,discarded)) {
+				found = lookupRequest;
+			}
+		}
 
-		String current[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
-
-		Set<String> updated = current != null ? new HashSet<>(Arrays.asList(current)) : new HashSet<>();
-		updated.removeAll(Arrays.asList(discarded));
-		lookupRequest = new SimpleMatchRequest(updated.toArray(new String[updated.size()]));
+		if (found != null) {
+			lookupRequests.remove(found);
+		}
 	}
 
 	@Override
 	public void all() {
-		lookupRequest = new SimpleMatchRequest();
+		lookupRequests.clear();
+		lookupRequests.add(new SimpleMatchRequest());
 	}
 
 	@Override
 	public void none() {
-		lookupRequest = new SimpleMatchRequest(new String[0]);
+		lookupRequests.clear();
+	}
+
+	@Override
+	public List<String> considered() {
+		
+		List<String> requests = new ArrayList<>();
+		for (IMatchRequest lookupRequest : lookupRequests) {
+			requests.add(lookupRequest.toString());
+		}
+		
+		return requests;
 	}
 
 	/**
@@ -298,7 +325,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 		LOG.debug("Starting IOP Controller");
 
-		importManager = new IOPServiceDeclarationManager();
+		importManager = new IOPServiceDeclarationManager((int) properties.get(PluginConstants.LEASE_TIMEOUT));
 		importManager.start();
 
 		mIsRunning = false;
@@ -358,30 +385,47 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 				IEvent event = mQueue.dequeue();
 
 				switch (event.getType()) {
+				
 				case IEvent.EVENT_LOOKUPRESPONSE: {
 					if (importManager != null) {
 						importManager.dispatch((ILookupResponseEvent) event);
 					}
 					break;
 				}
+				
 				case IEvent.EVENT_ANNOUNCEMENT: {
-					IAnnouncementEvent annEvent = (IAnnouncementEvent) event;
+					IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
 
 					/*
-					 * An send back my own lookup request
+					 * Send back my lookup requests
 					 */
 					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
 							IInteraction.INTERACTION_CS);
-					ILookupEvent dualLookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-							(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) annEvent.getSourceID(), lookupRequest);
 					
-					
-					dualLookupEvent.setReadyToSend(true);
+					if (lookupRequests.isEmpty()) {
+						ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+								(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) announcementEvent.getSourceID(), 
+								new SimpleMatchRequest(new String[0]));
+						
+						lookupEvent.setReadyToSend(true);
+						rosePlugin.enqueue(lookupEvent);
 
-					rosePlugin.enqueue(dualLookupEvent);
+					}
+					else {
+						for (IMatchRequest lookupRequest : lookupRequests) {
+
+							ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+									(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) announcementEvent.getSourceID(), 
+									lookupRequest);
+							
+							lookupEvent.setReadyToSend(true);
+							rosePlugin.enqueue(lookupEvent);
+						}
+					}
 					
 					break;
 				}
+				
 				case IEvent.EVENT_LOOKUP: {
 					ILookupEvent lookupEvent = (ILookupEvent) event;
 
@@ -398,13 +442,14 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 						ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService, lookupEvent.getID(),
 								(IEndpointID) lookupEvent.getTargetID(), (IEndpointID) lookupEvent.getSourceID(),
 								matchedServices);
+						
 						responseEvent.setReadyToSend(true);
-
 						rosePlugin.enqueue(responseEvent);
 					}
 
 					break;
 				}
+				
 				case IEvent.EVENT_APPLICATION: {
 					IApplicationEvent invocation = (IApplicationEvent) event;
 					// incoming
@@ -452,6 +497,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 					}
 					break;
 				}
+				
 				case IEvent.EVENT_APPLICATIONRESPONSE: {
 					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
 					// incoming
@@ -467,9 +513,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 					}
 					break;
 				}
+				
 				case IEvent.EVENT_EVENTING: {
 					break;
 				}
+				
 				}
 			} else {
 				try {
@@ -485,8 +533,12 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	private class IOPServiceDeclarationManager extends Thread {
 
-		public IOPServiceDeclarationManager() {
+		private final int leaseTimeOut;
+		
+		public IOPServiceDeclarationManager(int leaseTimeOut) {
 			super("IOPServiceDeclarationManager");
+			
+			this.leaseTimeOut = leaseTimeOut;
 			setDaemon(true);
 		}
 
@@ -495,12 +547,13 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		}
 
 		private Map<IServiceID, ImportDeclaration> declarations = new ConcurrentHashMap<>();
+		private Map<IServiceID, Long> lastSeen 					= new ConcurrentHashMap<>();
 
 		private BlockingQueue<ImportDeclaration> pendingDeclarations = new LinkedBlockingQueue<>();
 
 		@Override
 		public void run() {
-			while (declarations != null) {
+			while (!isDisposed()) {
 
 				try {
 					ImportDeclaration declaration = pendingDeclarations.take();
@@ -514,18 +567,15 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 		private final void updateDeclarations(List<? extends IServiceDescription> services) {
 
-			Set<IServiceID> unrenewedServices = new HashSet<>();
 			Set<IServiceDescription> discoveredServices = new HashSet<>();
 
 			synchronized (this) {
-				unrenewedServices.addAll(declarations.keySet());
 
 				for (IServiceDescription service : services) {
-					// TODO service.getId() --> service.getID()
 					if (declarations.containsKey(service.getID())) {
-						// TODO service.getId() --> service.getID()
-						unrenewedServices.remove(service.getID());
-					} else {
+						lastSeen.put(service.getID(),System.currentTimeMillis());
+					}
+					else {
 						discoveredServices.add(service);
 					}
 				}
@@ -535,9 +585,29 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 			for (IServiceDescription discovered : discoveredServices) {
 				createDeclaration(discovered);
 			}
+			
+			garbageCollect();
 
-			for (IServiceID unrenewed : unrenewedServices) {
-				removeDeclaration(unrenewed);
+		}
+
+		private final void garbageCollect() {
+			Set<IServiceID> collected = new HashSet<>();
+			
+			long now = System.currentTimeMillis();
+			
+			synchronized (this) {
+
+				for (Map.Entry<IServiceID,Long> service : lastSeen.entrySet()) {
+					
+					if (now - service.getValue() > leaseTimeOut) {
+						collected.add(service.getKey());
+					}
+				}
+
+			}
+
+			for (IServiceID garbage : collected) {
+				removeDeclaration(garbage);
 			}
 		}
 
@@ -546,8 +616,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 			try {
 
 				ImportDeclaration declaration = ServiceDeclaration.from(service);
-				// TODO service.getId() --> service.getID()
 				declarations.put(service.getID(), declaration);
+				lastSeen.put(service.getID(),System.currentTimeMillis());
 				pendingDeclarations.put(declaration);
 
 			} catch (InterruptedException e) {
@@ -558,14 +628,20 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		private final void removeDeclaration(IServiceID serviceId) {
 			ImportDeclaration declaration = declarations.remove(serviceId);
 			if (declaration != null) {
+				lastSeen.remove(serviceId);
 				unregisterImportDeclaration(declaration);
 			}
 		}
 
 		public synchronized void dispose() {
 			declarations.clear();
+			lastSeen.clear();
 			declarations = null;
 			pendingDeclarations.clear();
+		}
+
+		public synchronized boolean isDisposed() {
+			return declarations == null;
 		}
 
 	}
@@ -596,7 +672,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID arg0) {
+	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID self) {
 		List<IServiceDescription> list = new ArrayList<>();
 		for (IServiceDescription s : exportedServices.keySet()) {
 			list.add(s);

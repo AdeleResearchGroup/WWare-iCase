@@ -1,6 +1,10 @@
 package fr.liglab.adele.iop.device.tools;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -28,10 +32,17 @@ public class Commands {
     IOPLookupService lookup;
     
     @Descriptor("configure service lookup")
-    public void lookup(@Descriptor("lookup add|remove|none|all services...") String... parameters) {
+    public void lookup(@Descriptor("lookup list|none|all|add services...|remove services...") String... parameters) {
 
     	if (parameters.length < 1) {
-    		System.out.println("command usage : lookup add|remove|none|all services...");
+    		System.out.println("command usage : lookup list|none|all|add services...|remove services...");
+    	}
+    	else if (parameters[0].equalsIgnoreCase("list")) {
+    		System.out.println("iop lookup = {");
+    		for (String request : lookup.considered()) {
+	    		System.out.println("	"+request);
+			}
+    		System.out.println("}");
     	}
     	else if (parameters[0].equalsIgnoreCase("all")) {
     		lookup.all();
@@ -40,7 +51,21 @@ public class Commands {
     		lookup.none();
     	}
     	else if (parameters[0].equalsIgnoreCase("add")) {
-    		lookup.consider(Arrays.copyOfRange(parameters, 1, parameters.length));
+    		List<String> interfaces = new ArrayList<>();
+    		Map<String,String> query = new HashMap<>();
+    		
+    		for (int i = 1; i < parameters.length; i++) {
+				String parameter = parameters[i];
+				if (parameter.startsWith("-")) {
+					query.put(parameter.substring(1), parameters[++i]);
+				}
+				else {
+					interfaces.add(parameter);
+				}
+				
+			}
+    		
+    		lookup.consider(interfaces.toArray(new String[0]),query);
     	}
     	else if (parameters[0].equalsIgnoreCase("remove")) {
     		lookup.discard(Arrays.copyOfRange(parameters, 1, parameters.length));

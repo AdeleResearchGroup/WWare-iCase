@@ -50,7 +50,7 @@ public class FuchsiaSetup {
 
     Instance iopDeviceExporterLinker = instance()
             .of(FuchsiaConstants.DEFAULT_EXPORTATION_LINKER_FACTORY_NAME)
-            .with(ExportationLinker.FILTER_EXPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.exported.service.id=*)(iop.exported.service.capabilities=*))")
+            .with(ExportationLinker.FILTER_EXPORTDECLARATION_PROPERTY).setto("(&(scope=generic)(iop.exported.service.id=*)(iop.exported.service.functionalities=*))")
             .with(ExportationLinker.FILTER_EXPORTERSERVICE_PROPERTY).setto("(instance.name=iopServiceExporter)");
     
 }

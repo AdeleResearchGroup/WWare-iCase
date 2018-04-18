@@ -1,6 +1,7 @@
 package fr.liglab.adele.iop.device.icasa.publisher;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +12,7 @@ import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Invalidate;
+import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.ServiceProperty;
 import org.apache.felix.ipojo.annotations.Unbind;
@@ -40,35 +42,6 @@ public class LocatedObjectPublisher extends AbstractExportManagerComponent {
 	protected LocatedObjectPublisher(BundleContext bundleContext) {
 		super(bundleContext);
 	}
-	
-	
-	@Bind(id="device", proxy = false, optional = true, aggregate = true)
-	public void serviceBound(LocatedObject service, Map<String,?> properties) {
-		
-		if (service instanceof IOPService)
-			return;
-
-		String component						= (String) properties.get("factory.name");
-		String id								= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
-		List<IFunctionality> functionalities 	= new ArrayList<>();
-		
-		for (String provided : (String[])properties.get(org.osgi.framework.Constants.OBJECTCLASS)) {
-			functionalities.add(new Functionality(provided));
-		}
-		
-		ExportDeclaration declaration = ServiceDeclaration.from(service,id,functionalities,component);
-		published.put(id,declaration);
-		registerExportDeclaration(declaration);
-	}
-	
-	@Unbind(id="device")
-	public void serviceUnbound(LocatedObject service, Map<String,?> properties) {
-		String id						= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
-		ExportDeclaration declaration 	= published.remove(id);
-		if (declaration != null) {
-			unregisterExportDeclaration(declaration);
-		}
-	}
 
 	@Override
 	public String getName() {
@@ -84,5 +57,63 @@ public class LocatedObjectPublisher extends AbstractExportManagerComponent {
 	protected void stop() {
 		super.stop();
 	}
+
+	
+	@Bind(id="device", proxy = false, optional = true, aggregate = true)
+	public void serviceBound(LocatedObject service, Map<String,?> properties) {
+		
+		if (service instanceof IOPService)
+			return;
+
+		String component						= (String) properties.get("factory.name");
+		String id								= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
+		List<IFunctionality> functionalities 	= new ArrayList<>();
+		
+		for (String provided : (String[])properties.get(org.osgi.framework.Constants.OBJECTCLASS)) {
+			functionalities.add(new Functionality(provided));
+		}
+		
+		
+		ExportDeclaration declaration = ServiceDeclaration.from(component,service,id,functionalities,exportedProperties(service,properties));
+		published.put(id,declaration);
+		registerExportDeclaration(declaration);
+	}
+	
+	@Unbind(id="device")
+	public void serviceUnbound(LocatedObject service, Map<String,?> properties) {
+		String id						= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
+		ExportDeclaration declaration 	= published.remove(id);
+		if (declaration != null) {
+			unregisterExportDeclaration(declaration);
+		}
+	}
+
+	@Modified(id="device")
+	public void serviceModifed(LocatedObject service, Map<String,?> properties) {
+		
+		String id					= String.valueOf((Long) properties.get(org.osgi.framework.Constants.SERVICE_ID));
+		ExportDeclaration export 	= published.get(id);
+		
+		if (modified(export,service,properties)) {
+			serviceUnbound(service,properties);
+			serviceBound(service,properties);
+		}
+	}
+	
+	
+	private Map<String,?> exportedProperties(LocatedObject service, Map<String,?> properties) {
+		
+		Map<String,Object> exportedProperties	= new HashMap<>();
+		
+		exportedProperties.put("location", service.getZone());
+		exportedProperties.put("position", service.getPosition());
+		
+		return exportedProperties;
+	}
+
+	private boolean modified(ExportDeclaration export, LocatedObject service, Map<String,?> properties) {
+		return export != null && ! new ServiceDeclaration(export).getProperties().equals(exportedProperties(service, properties));
+	}
+
 
 }
