@@ -21,15 +21,9 @@ public class ICasaLookup implements ILookup  {
 	}
 
 	@Override
-	public void processLookupRequest(IEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void processLookupRequest(IEvent arg0) { }
 
 	@Override
-	public void processLookupResponse(IEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void processLookupResponse(IEvent arg0) { }
 
 }

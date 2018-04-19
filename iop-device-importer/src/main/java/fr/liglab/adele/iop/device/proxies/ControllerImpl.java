@@ -105,7 +105,6 @@ import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
 @Provides(specifications = { DiscoveryService.class, DiscoveryIntrospection.class, IOPInvocationHandler.class,
 		IOPLookupService.class, IOPPublisher.class })
 
-// TODO changed IEnqueue to IMediator
 public class ControllerImpl extends AbstractDiscoveryComponent
 		implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IMediator, Runnable {
 
@@ -119,7 +118,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	@ContextEntity.State.Field(service = IOPController.class, state = IOPController.PROPERTIES)
 	private Map<String, Object> properties;
 
-	// TODO changed to RosePlugin
 	private RosePlugin rosePlugin;
 	private Thread mThread;
 	private Queue<IEvent> mQueue;
@@ -336,13 +334,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		mThread.start();
 		mIsRunning = true;
 
-		// TODO changed to RosePlugin from APlugin as APlugin is abstract
 		rosePlugin = new RosePlugin("iCasa over IOP", this, properties);
 		rosePlugin.start();
 
 		myServiceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), contextId);
 
-		// TODO IEventingEvent --> excluded discovery to IDiscoveryEvent
 		// (DiscoveryEvent, EDiscoveryType)
 		IDiscoveryEvent registrationEvent = new DiscoveryEvent(rosePlugin.getID(), EDiscoveryType.SERVICE_REGISTRATION);
 		registrationEvent.addProperty(IDiscoveryEvent.SERVICE,
@@ -646,30 +642,18 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	}
 
-	// TODO inherited methods from IMediator, can be empty
+	// most inherited methods from IMediator, can be empty
 	@Override
-	public void addPlugin(IPlugin arg0, IEnqueue arg1) {
-		// TODO Auto-generated method stub
-
-	}
+	public void addPlugin(IPlugin arg0, IEnqueue arg1) {	}
 
 	@Override
-	public void addProcessor(IFilter arg0) {
-		// TODO Auto-generated method stub
-
-	}
+	public void addProcessor(IFilter arg0) {	}
 
 	@Override
-	public IDynamicRouter<IEvent> getDispatcher() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public IDynamicRouter<IEvent> getDispatcher() {	return null; }
 
 	@Override
-	public IMediatorID getMediatorID() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public IMediatorID getMediatorID() { return null; }
 
 	@Override
 	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID self) {
@@ -681,9 +665,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void setContextManager(IContextManagement arg0) {
-		// TODO Auto-generated method stub
-
-	}
+	public void setContextManager(IContextManagement arg0) {	}
 
 }
