@@ -240,18 +240,18 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void publish(String id, String componentName, List<IFunctionality> functionalities, Map<String,?> properties,
-			IOPInvocationHandler handler) {
+	public void publish(String id, String componentName, List<IFunctionality> functionalities,
+			Map<String, ?> properties, IOPInvocationHandler handler) {
 
 		LocalServiceID serviceId = new LocalServiceID(rosePlugin.getID().getDeviceID(), id);
-		
-		List<IProperty> exportedProperties	= new ArrayList<>();
+
+		List<IProperty> exportedProperties = new ArrayList<>();
 		for (String property : properties.keySet()) {
-			exportedProperties.add(new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT, 
+			exportedProperties.add(new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT,
 					property, properties.get(property).toString(), Operator.EQUAL));
 		}
-		
-		IServiceDescription service = new LocalService(serviceId, componentName, functionalities,exportedProperties);
+
+		IServiceDescription service = new LocalService(serviceId, componentName, functionalities, exportedProperties);
 
 		exportedServices.put(service, handler);
 	}
@@ -264,13 +264,15 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void consider(String[] considered, Map<String,String> query) {
-		
-		List<IProperty> properties = new ArrayList<IProperty>();
-		for (String property : query.keySet()) {
-			properties.add( new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT,
-					property, query.get(property), Operator.EQUAL)
-			);
+	public void consider(String[] considered, Map<String, String> query) {
+
+		List<IProperty> properties = null;
+		if (query.size() > 0) {
+			properties = new ArrayList<IProperty>();
+			for (String property : query.keySet()) {
+				properties.add(new de.mannheim.wifo2.iop.service.model.impl.Property(IProperty.TYPE_CONTEXT, property,
+						query.get(property), Operator.EQUAL));
+			}
 		}
 
 		lookupRequests.add(new SimpleMatchRequest(considered, properties));
@@ -278,11 +280,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	@Override
 	public void discard(String[] discarded) {
-		
+
 		IMatchRequest found = null;
 		for (IMatchRequest lookupRequest : lookupRequests) {
 			String requested[] = (String[]) lookupRequest.getProperty(IMatchRequest.FUNCTIONALITY);
-			if (Arrays.equals(requested,discarded)) {
+			if (Arrays.equals(requested, discarded)) {
 				found = lookupRequest;
 			}
 		}
@@ -305,12 +307,12 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	@Override
 	public List<String> considered() {
-		
+
 		List<String> requests = new ArrayList<>();
 		for (IMatchRequest lookupRequest : lookupRequests) {
 			requests.add(lookupRequest.toString());
 		}
-		
+
 		return requests;
 	}
 
@@ -381,14 +383,14 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 				IEvent event = mQueue.dequeue();
 
 				switch (event.getType()) {
-				
+
 				case IEvent.EVENT_LOOKUPRESPONSE: {
 					if (importManager != null) {
 						importManager.dispatch((ILookupResponseEvent) event);
 					}
 					break;
 				}
-				
+
 				case IEvent.EVENT_ANNOUNCEMENT: {
 					IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
 
@@ -397,31 +399,30 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 					 */
 					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
 							IInteraction.INTERACTION_CS);
-					
+
 					if (lookupRequests.isEmpty()) {
 						ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-								(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) announcementEvent.getSourceID(), 
-								new SimpleMatchRequest(new String[0]));
-						
+								(IEndpointID) rosePlugin.getID().getDeviceID(),
+								(IEndpointID) announcementEvent.getSourceID(), new SimpleMatchRequest(new String[0]));
+
 						lookupEvent.setReadyToSend(true);
 						rosePlugin.enqueue(lookupEvent);
 
-					}
-					else {
+					} else {
 						for (IMatchRequest lookupRequest : lookupRequests) {
 
 							ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-									(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) announcementEvent.getSourceID(), 
-									lookupRequest);
-							
+									(IEndpointID) rosePlugin.getID().getDeviceID(),
+									(IEndpointID) announcementEvent.getSourceID(), lookupRequest);
+
 							lookupEvent.setReadyToSend(true);
 							rosePlugin.enqueue(lookupEvent);
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				case IEvent.EVENT_LOOKUP: {
 					ILookupEvent lookupEvent = (ILookupEvent) event;
 
@@ -438,14 +439,14 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 						ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService, lookupEvent.getID(),
 								(IEndpointID) lookupEvent.getTargetID(), (IEndpointID) lookupEvent.getSourceID(),
 								matchedServices);
-						
+
 						responseEvent.setReadyToSend(true);
 						rosePlugin.enqueue(responseEvent);
 					}
 
 					break;
 				}
-				
+
 				case IEvent.EVENT_APPLICATION: {
 					IApplicationEvent invocation = (IApplicationEvent) event;
 					// incoming
@@ -493,7 +494,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 					}
 					break;
 				}
-				
+
 				case IEvent.EVENT_APPLICATIONRESPONSE: {
 					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
 					// incoming
@@ -509,11 +510,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 					}
 					break;
 				}
-				
+
 				case IEvent.EVENT_EVENTING: {
 					break;
 				}
-				
+
 				}
 			} else {
 				try {
@@ -530,10 +531,10 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	private class IOPServiceDeclarationManager extends Thread {
 
 		private final int leaseTimeOut;
-		
+
 		public IOPServiceDeclarationManager(int leaseTimeOut) {
 			super("IOPServiceDeclarationManager");
-			
+
 			this.leaseTimeOut = leaseTimeOut;
 			setDaemon(true);
 		}
@@ -543,7 +544,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		}
 
 		private Map<IServiceID, ImportDeclaration> declarations = new ConcurrentHashMap<>();
-		private Map<IServiceID, Long> lastSeen 					= new ConcurrentHashMap<>();
+		private Map<IServiceID, Long> lastSeen = new ConcurrentHashMap<>();
 
 		private BlockingQueue<ImportDeclaration> pendingDeclarations = new LinkedBlockingQueue<>();
 
@@ -569,9 +570,8 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 				for (IServiceDescription service : services) {
 					if (declarations.containsKey(service.getID())) {
-						lastSeen.put(service.getID(),System.currentTimeMillis());
-					}
-					else {
+						lastSeen.put(service.getID(), System.currentTimeMillis());
+					} else {
 						discoveredServices.add(service);
 					}
 				}
@@ -581,20 +581,20 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 			for (IServiceDescription discovered : discoveredServices) {
 				createDeclaration(discovered);
 			}
-			
+
 			garbageCollect();
 
 		}
 
 		private final void garbageCollect() {
 			Set<IServiceID> collected = new HashSet<>();
-			
+
 			long now = System.currentTimeMillis();
-			
+
 			synchronized (this) {
 
-				for (Map.Entry<IServiceID,Long> service : lastSeen.entrySet()) {
-					
+				for (Map.Entry<IServiceID, Long> service : lastSeen.entrySet()) {
+
 					if (now - service.getValue() > leaseTimeOut) {
 						collected.add(service.getKey());
 					}
@@ -613,7 +613,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 				ImportDeclaration declaration = ServiceDeclaration.from(service);
 				declarations.put(service.getID(), declaration);
-				lastSeen.put(service.getID(),System.currentTimeMillis());
+				lastSeen.put(service.getID(), System.currentTimeMillis());
 				pendingDeclarations.put(declaration);
 
 			} catch (InterruptedException e) {
@@ -644,16 +644,22 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	// most inherited methods from IMediator, can be empty
 	@Override
-	public void addPlugin(IPlugin arg0, IEnqueue arg1) {	}
+	public void addPlugin(IPlugin arg0, IEnqueue arg1) {
+	}
 
 	@Override
-	public void addProcessor(IFilter arg0) {	}
+	public void addProcessor(IFilter arg0) {
+	}
 
 	@Override
-	public IDynamicRouter<IEvent> getDispatcher() {	return null; }
+	public IDynamicRouter<IEvent> getDispatcher() {
+		return null;
+	}
 
 	@Override
-	public IMediatorID getMediatorID() { return null; }
+	public IMediatorID getMediatorID() {
+		return null;
+	}
 
 	@Override
 	public List<? extends IServiceDescription> getServicesForAdvertisement(IPluginID self) {
@@ -665,6 +671,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void setContextManager(IContextManagement arg0) {	}
+	public void setContextManager(IContextManagement arg0) {
+	}
 
 }
