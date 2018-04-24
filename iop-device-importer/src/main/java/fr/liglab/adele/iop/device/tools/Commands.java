@@ -15,6 +15,7 @@ import org.apache.felix.ipojo.annotations.ServiceProperty;
 import org.apache.felix.service.command.Descriptor;
 
 import fr.liglab.adele.iop.device.api.IOPLookupService;
+import fr.liglab.adele.iop.services.api.LocationService;
 
 @Component(immediate = true)
 @Provides(specifications = Commands.class)
@@ -26,11 +27,30 @@ public class Commands {
 	private String scope;
 
 	@ServiceProperty(name = "osgi.command.function", value = "{}")
-	private String[] function = new String[] { "lookup" };
+	private String[] function = new String[] { "lookup", "nearby" };
 
 	@Requires(optional = false, proxy = false)
 	IOPLookupService lookup;
 
+	@Requires(optional = true, proxy = false)
+	LocationService location;
+
+	@Descriptor("location service")
+	public void nearby(@Descriptor("nearby locationId") String... parameters) {
+		if (parameters.length < 1) {
+			System.out.println("nearby locationId");
+			return;
+		} 
+		
+		if(location != null)  {
+			System.out.println("locations nearby = {");
+			for (String request : location.getNearbyZones(parameters[0])) {
+				System.out.println("	" + request);
+			}
+			System.out.println("}");
+		}
+	}
+	
 	@Descriptor("configure service lookup")
 	public void lookup(@Descriptor("lookup list|none|all|add services...|remove services...") String... parameters) {
 
