@@ -25,18 +25,7 @@
 		<repository>
 			<id>icasa-socm-repository</id>
 			<name>iCasa SOCM Cloudbees Snapshot Private Repository</name>
-			<url>http://repository-icasa.forge.cloudbees.com/socm</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-
-		<repository>
-			<id>fuchsia-socm-repository</id>
-			<url>http://repository-icasa.forge.cloudbees.com/fuchsia</url>
+			<url>http://adele.imag.fr/repository/icasa/socm</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>
@@ -48,7 +37,7 @@
 		<repository>
 			<id>adele-central-snapshots</id>
 			<name>adele-central-snapshot</name>
-			<url>http://repository-icasa.forge.cloudbees.com/snapshot</url>
+			<url>http://adele.imag.fr/repository/snapshot</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>
