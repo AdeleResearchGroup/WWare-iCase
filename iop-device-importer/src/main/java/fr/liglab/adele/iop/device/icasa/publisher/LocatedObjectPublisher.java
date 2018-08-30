@@ -105,8 +105,9 @@ public class LocatedObjectPublisher extends AbstractExportManagerComponent {
 		
 		Map<String,Object> exportedProperties	= new HashMap<>();
 		
-		exportedProperties.put("location", service.getZone());
-		exportedProperties.put("position", service.getPosition());
+		if (service.getZone() != null && !service.getZone().equals(LocatedObject.LOCATION_UNKNOWN)) {
+			exportedProperties.put("location", service.getZone());
+		}
 		
 		return exportedProperties;
 	}
