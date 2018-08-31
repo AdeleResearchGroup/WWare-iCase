@@ -61,6 +61,7 @@
   
   <modules>
   	<module>iop-device-importer</module>
+  	<module>iop-demonstrator</module>
   	<module>iop-interop-distribution</module>
   </modules>
 </project>

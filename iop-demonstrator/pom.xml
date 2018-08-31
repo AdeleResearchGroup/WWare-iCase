@@ -1,0 +1,153 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+  
+	<!-- Project parent -->
+	<parent>
+		<groupId>fr.liglab.adele.icasa</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.2.7-SNAPSHOT</version>
+		<relativePath />
+	</parent>
+	
+	<artifactId>iop-demonstrator</artifactId>
+  	<version>0.2.1-SNAPSHOT</version>
+	<packaging>bundle</packaging>
+	
+	<name>${productName} :: ${projectName} :: IOP Demonstrator</name>
+	
+    <properties>
+        <icasa.version>1.2.7-SNAPSHOT</icasa.version>
+        <fuchsia.version>0.0.5-SNAPSHOT</fuchsia.version>
+		<cream.version>0.1-SNAPSHOT</cream.version>
+    </properties>
+	
+	<repositories>
+		<repository>
+			<id>icasa-socm-repository</id>
+			<name>iCasa SOCM Cloudbees Snapshot Private Repository</name>
+			<url>http://adele.imag.fr/repository/icasa/socm</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>adele-central-snapshots</id>
+			<name>adele-central-snapshot</name>
+			<url>http://adele.imag.fr/repository/snapshot</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+	</repositories>
+	
+	<pluginRepositories>
+		<pluginRepository>
+			<id>icasa-socm-plugin-repository</id>
+			<name>iCasa SOCM Cloudbees Snapshot Private Repository</name>
+			<url>http://repository-icasa.forge.cloudbees.com/socm</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+	
+    <dependencies>
+    
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.ipojo.annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.gogo.runtime</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.osgi</groupId>
+                    <artifactId>org.eclipse.osgi</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.liglab.adele.cream</groupId>
+            <artifactId>cream.runtime.facilities</artifactId>
+        </dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa.layering</groupId>
+			<artifactId>icasa.layering.structure</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>technical.services.api</artifactId>
+			<version>${icasa.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>iop-device-importer</artifactId>
+			<version>${project.version}</version>
+			<type>bundle</type>
+		</dependency>
+    
+	</dependencies>
+
+
+	<build>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Bundle-SymbolicName>
+							${project.artifactId}
+						</Bundle-SymbolicName>
+						<Include-Resource>{maven-resources},
+							META-INF/NOTICE = NOTICE
+						</Include-Resource>
+					</instructions>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-ipojo-plugin</artifactId>
+				<dependencies>
+					<dependency>
+						<groupId>fr.liglab.adele.cream</groupId>
+						<artifactId>cream.ipojo.module</artifactId>
+						<version>${context.socm.version}</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<goals>
+							<goal>ipojo-bundle</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+			
+		</plugins>
+	</build>
+</project>

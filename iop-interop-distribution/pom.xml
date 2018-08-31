@@ -60,9 +60,9 @@
 	<!-- Project dependencies -->
 	<dependencies>
 		<dependency>
-			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>icasa.dashboard.distribution</artifactId>
-			<version>${icasa.version}</version>
+			<groupId>fr.liglab.adele.icasa.layering</groupId>
+			<artifactId>icasa.layering.distribution</artifactId>
+			<version>1.0-SNAPSHOT</version>
 			<type>osgi-distribution</type>
 		</dependency>
 
@@ -85,47 +85,19 @@
 			<version>${fuchsia.version}</version>
 		</dependency>
 
-		<!--SIMULATOR -->
-		<dependency>
-			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>simulator.web.instance</artifactId>
-			<version>${icasa.version}</version>
-		</dependency>
-
-		<!-- Context -->
-		<dependency>
-			<groupId>fr.liglab.adele.cream</groupId>
-			<artifactId>cream.runtime.facilities</artifactId>
-		</dependency>
-
-		<!-- Context Management -->
-
-		<dependency>
-	        <groupId>fr.liglab.adele.cream</groupId>
-			<artifactId>cream.administration.api</artifactId>
-			<version>${context.socm.version}</version>
-			<type>bundle</type>
-		</dependency>
-
-		<dependency>
-	        <groupId>fr.liglab.adele.cream</groupId>
-			<artifactId>cream.administration.impl</artifactId>
-			<version>${context.socm.version}</version>
-			<type>bundle</type>
-		</dependency>
-
-		<dependency>
-	        <groupId>fr.liglab.adele.cream</groupId>
-			<artifactId>cream.administration.command</artifactId>
-	        <version>${context.socm.version}</version>
-			<type>bundle</type>
-		</dependency>
 
 		<!--Interop -->
 		
 		<dependency>
 			<groupId>fr.liglab.adele.icasa</groupId>
 			<artifactId>iop-device-importer</artifactId>
+			<version>${project.version}</version>
+			<type>bundle</type>
+		</dependency>
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>iop-demonstrator</artifactId>
 			<version>${project.version}</version>
 			<type>bundle</type>
 		</dependency>
