@@ -49,7 +49,6 @@ import org.ow2.chameleon.fuchsia.core.component.DiscoveryIntrospection;
 import org.ow2.chameleon.fuchsia.core.component.DiscoveryService;
 import org.ow2.chameleon.fuchsia.core.declaration.ImportDeclaration;
 
-import de.mannheim.wifo2.iop.context.i.IContextManagement;
 import de.mannheim.wifo2.iop.event.EDiscoveryType;
 import de.mannheim.wifo2.iop.event.IDynamicRouter;
 import de.mannheim.wifo2.iop.event.IEvent;
@@ -79,6 +78,7 @@ import de.mannheim.wifo2.iop.identifier.impl.PluginID;
 import de.mannheim.wifo2.iop.mediator.IMediator;
 import de.mannheim.wifo2.iop.mediator.filter.i.IFilter;
 import de.mannheim.wifo2.iop.plugin.IPlugin;
+import de.mannheim.wifo2.iop.service.IGlobalService;
 import de.mannheim.wifo2.iop.service.LocalService;
 import de.mannheim.wifo2.iop.service.access.ICall;
 import de.mannheim.wifo2.iop.service.access.IParameter;
@@ -671,7 +671,11 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void setContextManager(IContextManagement arg0) {
+	public void addGlobalService(IGlobalService contextManager) {		
+	}
+
+	@Override
+	public void initializeFilters() {		
 	}
 
 }
