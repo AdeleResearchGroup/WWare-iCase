@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import org.apache.felix.ipojo.annotations.*;
 
 import org.apache.felix.ipojo.dependency.interceptors.DependencyInterceptor;
@@ -50,12 +51,15 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
+    private @Creator.Field Creator.Entity<RoomTemperatureControlApp> roomTemperatureApp;
+
     public ApplicationManager() {
 	}
 
     @Validate
     public void start(){
     	lightningApplicationCreator.create("LightApp");
+
     }
 
     @Invalidate
@@ -69,20 +73,28 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     public void bindZone(Zone zone) {
     	
 		String instance = "SmartShutter."+zone.getZoneName();
-		
+		String instance2 = "Temperature."+zone.getZoneName();
+
 		Map<String,Object> properties = new HashMap<>();
 
 		smartShutterCreator.create(instance,properties);
         attacher.link(instance,zone);
+
+        roomTemperatureApp.create(instance2,properties);
+        attacher.link(instance2,zone);
     }
 
     @Unbind(id="zones")
     public void unbindZone(Zone zone) {
     	
 		String instance = "SmartShutter."+zone.getZoneName();
-		
+		String instance2 = "TemperatureIn:"+zone.getZoneName();
+
 		smartShutterCreator.delete(instance);
         attacher.unlink(instance,zone);
+
+        roomTemperatureApp.delete(instance2);
+		attacher.unlink(instance2,zone);
     }
 
  
@@ -161,8 +173,7 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 	}
 
 	@Override
-	public <S> TransformedServiceReference<S> accept(DependencyModel dependency, BundleContext context,
-			TransformedServiceReference<S> ref) {
+	public <S> TransformedServiceReference<S> accept(DependencyModel dependency, BundleContext context, TransformedServiceReference<S> ref) {
 		return ref;
 	}
 
