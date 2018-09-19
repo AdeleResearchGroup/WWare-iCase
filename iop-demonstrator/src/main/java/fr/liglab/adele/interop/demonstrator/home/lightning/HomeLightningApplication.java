@@ -79,7 +79,7 @@ public class HomeLightningApplication implements ApplicationLayer {
     	properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME), instance);
 
     	serviceCreator.create(instance,properties);
-        attacher.create(instance,zone);
+        attacher.link(instance,zone);
     }
 
     @Unbind(id="zones")
@@ -88,7 +88,7 @@ public class HomeLightningApplication implements ApplicationLayer {
 		String instance = zone.getZoneName()+".lightning";
 		
 		serviceCreator.delete(instance);
-        attacher.delete(instance,zone);
+        attacher.unlink(instance,zone);
     }
 
  

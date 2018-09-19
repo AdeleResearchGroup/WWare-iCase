@@ -2,6 +2,7 @@ package fr.liglab.adele.interop.demonstrator.smart.shutter;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtension;
+import fr.liglab.adele.cream.annotations.functional.extension.InjectedFunctionalExtension;
 
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -25,7 +26,9 @@ import fr.liglab.adele.icasa.device.light.Photometer;
 
 public class ShutterController implements ApplicationLayer {
 
-
+	@InjectedFunctionalExtension(id="ZoneService")
+	ZoneService zone;
+	
 	@Requires(id="photometer", optional = false, filter = ZoneService.objectInSameZone,	proxy = false)
     @ContextRequirement(spec = {LocatedObject.class})
 	private Photometer photometer;
@@ -43,4 +46,7 @@ public class ShutterController implements ApplicationLayer {
 		}
     }
 
+    public String getLocation() {
+    	return zone.getZone();
+    }
 }

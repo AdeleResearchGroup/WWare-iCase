@@ -3,10 +3,18 @@ package fr.liglab.adele.interop.demonstrator;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.ipojo.annotations.*;
+
+import org.apache.felix.ipojo.dependency.interceptors.DependencyInterceptor;
+import org.apache.felix.ipojo.dependency.interceptors.ServiceRankingInterceptor;
+import org.apache.felix.ipojo.dependency.interceptors.ServiceTrackingInterceptor;
+import org.apache.felix.ipojo.dependency.interceptors.TransformedServiceReference;
+import org.apache.felix.ipojo.util.DependencyModel;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 
@@ -25,13 +33,17 @@ import fr.liglab.adele.iop.device.api.IOPService;
 
 import fr.liglab.adele.icasa.device.light.Photometer;
 
-@Component(immediate = true,publicFactory = false)
-@Provides(specifications={PeriodicRunnable.class})
+@Component(immediate = true)
+@Provides(specifications={PeriodicRunnable.class, ServiceTrackingInterceptor.class, ServiceRankingInterceptor.class})
 
 @Instantiate
 
-public class ApplicationManager implements PeriodicRunnable {
+public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInterceptor, ServiceRankingInterceptor {
 
+	
+	 @ServiceProperty(name=DependencyInterceptor.TARGET_PROPERTY, value="(& (factory.name=fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController) (dependency.id=photometer))")
+	 private String targetDependency;
+	 
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
     @Creator.Field Creator.Entity<HomeLightningApplication> lightningApplicationCreator;
@@ -61,7 +73,7 @@ public class ApplicationManager implements PeriodicRunnable {
 		Map<String,Object> properties = new HashMap<>();
 
 		smartShutterCreator.create(instance,properties);
-        attacher.create(instance,zone);
+        attacher.link(instance,zone);
     }
 
     @Unbind(id="zones")
@@ -70,7 +82,7 @@ public class ApplicationManager implements PeriodicRunnable {
 		String instance = "SmartShutter."+zone.getZoneName();
 		
 		smartShutterCreator.delete(instance);
-        attacher.delete(instance,zone);
+        attacher.unlink(instance,zone);
     }
 
  
@@ -103,8 +115,6 @@ public class ApplicationManager implements PeriodicRunnable {
 
 	@Override
 	public void run() {
-		System.out.println("15 minutes se sont ecoulés");
-		
 		if (!hasRequestedLookup && !hasPhotometer ) {
 			System.out.println("je vais faire un lookup vers IOP");
 			lookup.consider(new String[] {Photometer.class.getCanonicalName()}, Collections.emptyMap());
@@ -113,7 +123,7 @@ public class ApplicationManager implements PeriodicRunnable {
 		
 	}
 
-	private static final boolean isRemote(ServiceReference<Photometer> reference) {
+	private static final boolean isRemote(ServiceReference<?> reference) {
 		String[] services = (String[]) reference.getProperty(Constants.OBJECTCLASS);
 		for (String service : services) {
 			if (service.contains(IOPService.class.getCanonicalName())) {
@@ -124,10 +134,12 @@ public class ApplicationManager implements PeriodicRunnable {
 		return false;
 	}
 
-    public static class Ranking implements Comparator<ServiceReference<Photometer>> {
+    @SuppressWarnings("rawtypes")
+	public static class Ranking implements Comparator<ServiceReference> {
 
-		@Override
-		public int compare(ServiceReference<Photometer> first, ServiceReference<Photometer> second) {
+
+    	@Override
+		public int compare(ServiceReference first, ServiceReference second) {
 			
 			boolean firstIsRemote 	= isRemote(first);
 			boolean secondIsRemote 	= isRemote(second);
@@ -139,6 +151,49 @@ public class ApplicationManager implements PeriodicRunnable {
 		}
     	
     }
+
+	@Override
+	public void open(DependencyModel dependency) {
+	}
+
+	@Override
+	public void close(DependencyModel dependency) {
+	}
+
+	@Override
+	public <S> TransformedServiceReference<S> accept(DependencyModel dependency, BundleContext context,
+			TransformedServiceReference<S> ref) {
+		return ref;
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes" })
+	public List<ServiceReference> getServiceReferences(DependencyModel dependency, List<ServiceReference> matching) {
+		matching.sort(new Ranking());
+		return matching;
+	}
+
+	@Override
+	@SuppressWarnings("rawtypes")
+	public List<ServiceReference> onServiceArrival(DependencyModel dependency, List<ServiceReference> matching,
+			ServiceReference<?> reference) {
+		return getServiceReferences(dependency,matching);
+	}
+
+	@Override
+	@SuppressWarnings("rawtypes")
+	public List<ServiceReference> onServiceDeparture(DependencyModel dependency, List<ServiceReference> matching,
+			ServiceReference<?> reference) {
+		return getServiceReferences(dependency,matching);
+	}
+
+	@Override
+	@SuppressWarnings("rawtypes")
+	public List<ServiceReference> onServiceModified(DependencyModel dependency, List<ServiceReference> matching,
+			ServiceReference<?> reference) {
+		return getServiceReferences(dependency,matching);
+	}
+
 
 
 }
