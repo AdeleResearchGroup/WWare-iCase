@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import org.apache.felix.ipojo.annotations.*;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -38,12 +39,15 @@ public class ApplicationManager implements PeriodicRunnable {
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
+    private @Creator.Field Creator.Entity<RoomTemperatureControlApp> roomTemperatureApp;
+
     public ApplicationManager() {
 	}
 
     @Validate
     public void start(){
     	lightningApplicationCreator.create("LightApp");
+
     }
 
     @Invalidate
@@ -57,20 +61,29 @@ public class ApplicationManager implements PeriodicRunnable {
     public void bindZone(Zone zone) {
     	
 		String instance = "SmartShutter."+zone.getZoneName();
-		
+		String instance2 = "Temperature."+zone.getZoneName();
+
 		Map<String,Object> properties = new HashMap<>();
 
 		smartShutterCreator.create(instance,properties);
         attacher.create(instance,zone);
+
+        roomTemperatureApp.create(instance2,properties);
+        attacher.create(instance2,zone);
+
     }
 
     @Unbind(id="zones")
     public void unbindZone(Zone zone) {
     	
 		String instance = "SmartShutter."+zone.getZoneName();
-		
+		String instance2 = "TemperatureIn:"+zone.getZoneName();
+
 		smartShutterCreator.delete(instance);
         attacher.delete(instance,zone);
+
+		roomTemperatureApp.delete(instance2);
+		attacher.delete(instance2,zone);
     }
 
  
