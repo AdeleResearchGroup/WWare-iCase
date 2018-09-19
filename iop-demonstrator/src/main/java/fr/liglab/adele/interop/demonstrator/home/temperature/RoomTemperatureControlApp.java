@@ -61,13 +61,13 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
 
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
-    private @Creator.Field Creator.Entity<LocalZoneAdjacencies> serviceCreator;
+   // private @Creator.Field Creator.Entity<LocalZoneAdjacencies> serviceCreator;
 
 
 
-    @Bind(id="zones", specification = Zone.class, aggregate = true,optional = true)
-    public void binzone(Zone zone){
-        String instancename = zone.getZoneName()+".tempCtrl";
+    //@Bind(id="zones", specification = Zone.class, aggregate = true,optional = true)
+    //public void binzone(Zone zone){
+     //   String instancename = zone.getZoneName()+".tempCtrl";
         /*System.out.println(zone.getZoneName());
         System.out.println(zone.getXLength());
         System.out.println(zone.getLeftTopAbsolutePosition());
@@ -78,19 +78,19 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
             zone.getYLength();
             zone.getRightBottomAbsolutePosition();
             zone.getRightBottomAbsolutePosition();
-        }*/
+        }
 
         Map<String,Object> properties = new HashMap<>();
         properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),instancename);
         serviceCreator.create(instancename,properties);
-        attacher.link(instancename,zone);
-    }
+        attacher.link(instancename,zone);*/
+    //}
 
-    @Unbind(id="zones")
-    public void unbindzone(Zone zone){
-        String instancename = zone.getZoneName()+"adjacencies";
+   // @Unbind(id="zones")
+    //public void unbindzone(Zone zone){
+       /* String instancename = zone.getZoneName()+"adjacencies";
         serviceCreator.delete(instancename);
-        attacher.unlink(instancename,zone);
-    }
+        attacher.unlink(instancename,zone);*/
+    //}
 
 }
