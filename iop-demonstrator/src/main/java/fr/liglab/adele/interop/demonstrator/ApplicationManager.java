@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import fr.liglab.adele.interop.demonstrator.home.lightning.LightFollowApplication;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import org.apache.felix.ipojo.annotations.*;
 
@@ -48,6 +49,7 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
     @Creator.Field Creator.Entity<HomeLightningApplication> lightningApplicationCreator;
+    @Creator.Field Creator.Entity<LightFollowApplication> followMeApplicationCreator;
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
@@ -59,12 +61,14 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     @Validate
     public void start(){
     	lightningApplicationCreator.create("LightApp");
+		followMeApplicationCreator.create("FollowApp");
 
     }
 
     @Invalidate
     public void stop(){
     	lightningApplicationCreator.delete("LightApp");
+		followMeApplicationCreator.delete("FollowApp");
     };
 
 
@@ -72,23 +76,24 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     @Bind(id="zones",specification = Zone.class, aggregate = true, optional = true)
     public void bindZone(Zone zone) {
     	
-		String instance = "SmartShutter."+zone.getZoneName();
-		String instance2 = "Temperature."+zone.getZoneName();
+		String instance = "SmartShutterApp."+zone.getZoneName();
+		String instance2 = "TemperatureApp."+zone.getZoneName();
 
 		Map<String,Object> properties = new HashMap<>();
+		Map<String,Object> properties2 = new HashMap<>();
 
 		smartShutterCreator.create(instance,properties);
         attacher.link(instance,zone);
 
-        roomTemperatureApp.create(instance2,properties);
+        roomTemperatureApp.create(instance2,properties2);
         attacher.link(instance2,zone);
     }
 
     @Unbind(id="zones")
     public void unbindZone(Zone zone) {
     	
-		String instance = "SmartShutter."+zone.getZoneName();
-		String instance2 = "TemperatureIn:"+zone.getZoneName();
+		String instance = "SmartShutterApp."+zone.getZoneName();
+		String instance2 = "TemperatureApp.:"+zone.getZoneName();
 
 		smartShutterCreator.delete(instance);
         attacher.unlink(instance,zone);

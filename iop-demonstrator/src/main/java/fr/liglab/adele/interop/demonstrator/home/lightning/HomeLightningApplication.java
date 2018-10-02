@@ -38,7 +38,6 @@ public class HomeLightningApplication implements ApplicationLayer {
 
     @Requires(id="lightningservices", specification = LightningService.class, optional=true)
     @ContextRequirement(spec = {ZoneService.class})
-    
     private List<LightningService> services;
 
     public HomeLightningApplication() {

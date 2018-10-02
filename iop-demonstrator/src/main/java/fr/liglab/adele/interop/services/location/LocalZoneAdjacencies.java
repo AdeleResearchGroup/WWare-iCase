@@ -6,4 +6,5 @@ import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 
 
 public @ContextService interface LocalZoneAdjacencies extends ServiceLayer {
+
 }

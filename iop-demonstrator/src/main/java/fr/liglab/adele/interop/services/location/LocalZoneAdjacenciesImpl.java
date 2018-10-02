@@ -17,11 +17,15 @@ import java.util.List;
 @FunctionalExtension(id="ZoneService",contextServices=ZoneService.class,implementation = ZoneServiceFunctionalExtension.class)
 
 public class LocalZoneAdjacenciesImpl implements LocalZoneAdjacencies,ServiceLayer{
+
+
+    //Requirements
      @Requires(id="zones",optional = false, proxy=false,specification = Zone.class)
      private List<Zone> zones;
 
     @Bind(id="zones")
     public void bindZone(Zone zone){
+        System.out.println("********************-----------------------*************************");
         System.out.println(zone.getZoneName());
         System.out.println(zone.getXLength());
         System.out.println(zone.getLeftTopAbsolutePosition());

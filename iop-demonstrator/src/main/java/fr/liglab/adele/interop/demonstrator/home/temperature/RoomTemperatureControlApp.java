@@ -3,6 +3,7 @@ package fr.liglab.adele.interop.demonstrator.home.temperature;
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtension;
+import fr.liglab.adele.cream.annotations.functional.extension.InjectedFunctionalExtension;
 import fr.liglab.adele.cream.annotations.provider.Creator;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
 import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
@@ -30,67 +31,40 @@ import java.util.Map;
 
 public class RoomTemperatureControlApp implements ApplicationLayer{
 
+    @InjectedFunctionalExtension(id="ZoneService")
+    ZoneService zone;
 
 
     @Requires(id="roomadjacencyservices",specification = LocalZoneAdjacencies.class,optional = true)
-    private LocalZoneAdjacencies adjacencies;
-    @Requires(id="roomtempservices", specification=RoomTemperatureService.class, optional = true)
     @ContextRequirement(spec={ZoneService.class})
-    private List<RoomTemperatureService> services;
+    private LocalZoneAdjacencies adjacencies;
+
+    @Requires(id="zones", specification = Zone.class, optional = true)
+    private List<Zone> zones;
 
 
-
-    @ServiceProperty(name="osgi.command.scope", value ="room-temperature")
+  /* @ServiceProperty(name="osgi.command.scope", value ="room-temperature")
     String commandScope;
 
     @ServiceProperty(name="osgi.command.function", value="{}")
-    String[] m_function = new String[] {"schedule"};
+    String[] m_function = new String[] {"schedule"};*/
 
-    @Descriptor("Set temperature of the appartment")
-    public void scheduleTemp(@Descriptor("zone") String zone, @Descriptor("period") String PeriodName){
-        System.out.println("Enabling schedule for temp...");
+    //private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
-        MomentOfTheDay.PartOfTheDay period = PeriodName.equals("NONE") ? null : MomentOfTheDay.PartOfTheDay.valueOf(PeriodName);
+    //private @Creator.Field Creator.Entity<RoomTemperatureServiceImpl> serviceCreator;
 
-        for (RoomTemperatureService service: services){
-            if ("ALL".equalsIgnoreCase(zone) || ((ZoneService) service).getZone().equals(zone)){
-                service.setSchedule(period);
-            }
+   /* @Bind(id="zones", aggregate = true)
+    public void  bindZone(Zone zone){
+        zone.getZoneName();
+        if (zones.size()==0){
+            serviceCreator.create("adjacencySrv");
         }
+    }*/
+
+   // private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
+
+    public String getLocation() {
+        return zone.getZone();
     }
-
-    private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
-
-   // private @Creator.Field Creator.Entity<LocalZoneAdjacencies> serviceCreator;
-
-
-
-    //@Bind(id="zones", specification = Zone.class, aggregate = true,optional = true)
-    //public void binzone(Zone zone){
-     //   String instancename = zone.getZoneName()+".tempCtrl";
-        /*System.out.println(zone.getZoneName());
-        System.out.println(zone.getXLength());
-        System.out.println(zone.getLeftTopAbsolutePosition());
-        System.out.println(zone.getRightBottomAbsolutePosition());*/
-     /*   for (service:
-             ) {
-            zone.getXLength();
-            zone.getYLength();
-            zone.getRightBottomAbsolutePosition();
-            zone.getRightBottomAbsolutePosition();
-        }
-
-        Map<String,Object> properties = new HashMap<>();
-        properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),instancename);
-        serviceCreator.create(instancename,properties);
-        attacher.link(instancename,zone);*/
-    //}
-
-   // @Unbind(id="zones")
-    //public void unbindzone(Zone zone){
-       /* String instancename = zone.getZoneName()+"adjacencies";
-        serviceCreator.delete(instancename);
-        attacher.unlink(instancename,zone);*/
-    //}
 
 }
