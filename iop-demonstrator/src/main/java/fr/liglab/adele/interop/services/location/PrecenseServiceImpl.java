@@ -25,9 +25,49 @@ import java.util.function.Supplier;
 
 public class PrecenseServiceImpl implements PrecenseService, ServiceLayer {
 
+    //SERVICE's STATES
+    @ContextEntity.State.Field(service = PrecenseService.class, state = STATE_CHANGE,value="false")
+    private boolean ServiceStatus;
+    @ContextEntity.State.Field(service = PrecenseService.class,state = ZONE_ATTACHED)
+    private String zoneName;
+
+    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
+    public String name;
+
+    @ContextEntity.State.Field(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
+    private int AppQoS;
+
+    private static final Integer MIN_QOS = 34;
 
 
-    //requirements
+    //IMPLEMENTATION's FUNCTIONS
+    @Override
+    public String getServiceName() {
+        return name;
+    }
+
+    @Override
+    public int getServiceQoS() {
+        return AppQoS;
+    }
+
+    @Override
+    public int getMinQos() {
+        return MIN_QOS;
+    }
+
+    @Override
+    public boolean getCurrentState() {
+        return ServiceStatus;
+    }
+
+    @Override
+    public String getAttachedZone() {
+        return zoneName;
+    }
+
+
+    //REQUIREMENTS
 	@Requires(id="sensor", optional=true, specification = PresenceSensor.class)
     @ContextRequirement(spec = {LocatedObject.class})
     private List<PresenceSensor> presenceSensors;
@@ -36,92 +76,68 @@ public class PrecenseServiceImpl implements PrecenseService, ServiceLayer {
     @ContextRequirement(spec = {LocatedObject.class})
     private List<BinaryLight> lights;
 
+    //CREATORS
 
+    //ACTIONS
 	@Modified(id="sensor")
     private void sensorTriggered(PresenceSensor presenceSensor){
 	    if(presenceSensors.size()>0){
+	        System.out.println("SRV(light) 1./////////////////////////////////////////////////////////////sensorUpdate");
+            updateState();
 	        //System.out.println(presenceSensor.getSensedPresence());
            // System.out.println(((LocatedObject)presenceSensor).getZone());
-            updateService();
             for (BinaryLight light:lights) {
                 if(((LocatedObject)light).getZone().equals(((LocatedObject)presenceSensor).getZone())){
                     if(presenceSensor.getSensedPresence()){
                         light.turnOn();
-                        //System.out.println("LIGHT OOOOON");
                     }else{
                         light.turnOff();
-                       //System.out.println("LIGHT OOOOOFF");
                     }
 
                 }
             }
-            getMinQos();
-            getchange("ze");
-            try
-            {
-                notifyAll();
-            }
-        catch(IllegalMonitorStateException imse)
-            {
-            }
-
 
         }
     }
+
+    /**
+     * Zone management
+     */
     @Bind(id="zones",specification = Zone.class, aggregate = true, optional = true)
-    public void zoneMod(){
-        updateService();
+    public void zoneMod(Zone zone){
+        pushZone(zone.getZoneName());
     }
 
-    @ContextEntity.State.Field(service = PrecenseService.class, state = CHANGES,directAccess = true)
-    private String stateChange;
+    //STATES CHANGE
+    @ContextEntity.State.Push(service=PrecenseService.class,state = PrecenseService.ZONE_ATTACHED)
+    public String pushZone(String zoneName){
+        System.out.println("Pushing zone attached...");
+        return zoneName;}
 
-    private static final Integer MIN_QOS = 34;
-
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
-    public String name;
-
-    @Override
-    public String getServiceName() {
-        return name;
-    }
-
-
-    @ContextEntity.State.Field(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
-    private int AppQoS;
-
-    @Override
-    public int getServiceQoS() {
-        return AppQoS;
-    }
+    @ContextEntity.State.Push(service = PrecenseService.class,state = PrecenseService.STATE_CHANGE)
+    public boolean pushService(boolean ServiceStatus){
+        System.out.println("SRV(light) pushing State change");
+        return ServiceStatus;}
 
     @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQoS = ()-> {
-
+        System.out.println("SRV(light) lamba PULL of presence service");
     	int currentQoS = 0;
     	return currentQoS;
     };
-    
-    @Override
-    public int getMinQos() {
-        return MIN_QOS;
-    }
 
-    public boolean stateChange(){
-        stateChange=stateChange+"*";
-        return true;
-    }
-    @ContextEntity.State.Push(service = PrecenseService.class, state = CHANGES)
-    public String PushChange(String change){return change;}
-
-    public void updateService(){
-        PushChange("srv");
+    //FUNCTIONS
+    private void updateState() {
+        if (getCurrentState()){
+            pushService(false);
+        } else {
+            pushService(true);
+        }
     }
 
 
     public List<String> getchange2() {
         List<String> activatedSensors = null;
-        String a=CHANGES;
         for(PresenceSensor ps:presenceSensors){
             if(ps.getSensedPresence()){
                 activatedSensors.add(((LocatedObject)ps).getZone());
@@ -130,13 +146,6 @@ public class PrecenseServiceImpl implements PrecenseService, ServiceLayer {
         return activatedSensors;
     }
 
-    @Override
-    public String getchange(String state) {
-        return null;
-    }
 
-    @Override
-    public String getChanges() {
-        return stateChange;
-    }
+
 }

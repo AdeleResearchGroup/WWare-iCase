@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import fr.liglab.adele.interop.demonstrator.home.lightning.LightFollowApplication;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
+import fr.liglab.adele.interop.demonstrator.test.testApp;
 import org.apache.felix.ipojo.annotations.*;
 
 import org.apache.felix.ipojo.dependency.interceptors.DependencyInterceptor;
@@ -50,6 +51,7 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Creator.Field Creator.Entity<HomeLightningApplication> lightningApplicationCreator;
     @Creator.Field Creator.Entity<LightFollowApplication> followMeApplicationCreator;
+    @Creator.Field Creator.Entity<testApp> tests;
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
@@ -60,8 +62,10 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Validate
     public void start(){
+    	tests.create("tempSim");
     	lightningApplicationCreator.create("LightApp");
 		followMeApplicationCreator.create("FollowApp");
+		roomTemperatureApp.create("TemperatureCloningApp");
 
     }
 
@@ -69,6 +73,7 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     public void stop(){
     	lightningApplicationCreator.delete("LightApp");
 		followMeApplicationCreator.delete("FollowApp");
+		roomTemperatureApp.delete("TemperatureConingApp");
     };
 
 
@@ -77,16 +82,13 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     public void bindZone(Zone zone) {
     	
 		String instance = "SmartShutterApp."+zone.getZoneName();
-		String instance2 = "TemperatureApp."+zone.getZoneName();
 
 		Map<String,Object> properties = new HashMap<>();
-		Map<String,Object> properties2 = new HashMap<>();
+
 
 		smartShutterCreator.create(instance,properties);
         attacher.link(instance,zone);
 
-        roomTemperatureApp.create(instance2,properties2);
-        attacher.link(instance2,zone);
     }
 
     @Unbind(id="zones")

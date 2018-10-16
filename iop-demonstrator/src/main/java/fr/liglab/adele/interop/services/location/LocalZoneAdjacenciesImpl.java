@@ -17,13 +17,17 @@ import java.util.List;
 @FunctionalExtension(id="ZoneService",contextServices=ZoneService.class,implementation = ZoneServiceFunctionalExtension.class)
 
 public class LocalZoneAdjacenciesImpl implements LocalZoneAdjacencies,ServiceLayer{
+    //Service states
+    //--------------
 
+    //Implementation Functions
+    //--------------
 
     //Requirements
      @Requires(id="zones",optional = false, proxy=false,specification = Zone.class)
      private List<Zone> zones;
 
-    @Bind(id="zones")
+    @Bind(id="zones", aggregate=true)
     public void bindZone(Zone zone){
         System.out.println("********************-----------------------*************************");
         System.out.println(zone.getZoneName());
@@ -49,5 +53,10 @@ public class LocalZoneAdjacenciesImpl implements LocalZoneAdjacencies,ServiceLay
     @Override
     public String getServiceName() {
         return ServiceLayer.NAME;
+    }
+
+    @Override
+    public List<Zone> getAdjacencies() {
+        return null;
     }
 }

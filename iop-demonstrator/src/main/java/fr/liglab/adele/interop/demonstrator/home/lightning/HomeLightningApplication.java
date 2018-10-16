@@ -35,15 +35,49 @@ import fr.liglab.adele.interop.services.lightning.LightningServiceImpl;
 public class HomeLightningApplication implements ApplicationLayer {
 
 
+    //SERVICE's STATES
 
+    //IMPLEMENTATION's FUNCTIONS
+    public HomeLightningApplication() {
+    }
+
+    //REQUIREMENTS
     @Requires(id="lightningservices", specification = LightningService.class, optional=true)
     @ContextRequirement(spec = {ZoneService.class})
     private List<LightningService> services;
 
-    public HomeLightningApplication() {
-	}
+    //CREATORS
+    private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
-    @ServiceProperty(name = "osgi.command.scope", value = "home-lightning")
+    private @Creator.Field Creator.Entity<LightningServiceImpl>	serviceCreator;
+
+    //ACTIONS
+    @Bind(id="zones",specification = Zone.class, aggregate = true, optional = true)
+    public void bindZone(Zone zone) {
+
+        String instance =  zone.getZoneName()+".lightning";
+
+        Map<String,Object> properties = new HashMap<>();
+        properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME), instance);
+
+        serviceCreator.create(instance,properties);
+        attacher.link(instance,zone);
+    }
+
+    @Unbind(id="zones")
+    public void unbindZone(Zone zone) {
+
+        String instance = zone.getZoneName()+".lightning";
+
+        serviceCreator.delete(instance);
+        attacher.unlink(instance,zone);
+    }
+    //FUNCTIONS
+
+
+
+
+  /*  @ServiceProperty(name = "osgi.command.scope", value = "home-lightning")
     String commandScope;
 
     @ServiceProperty(name = "osgi.command.function", value = "{}")
@@ -62,33 +96,12 @@ public class HomeLightningApplication implements ApplicationLayer {
         	}
         }
         
-    }
-
-    private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
-
-    private @Creator.Field Creator.Entity<LightningServiceImpl>	serviceCreator;
+    }*/
 
 
-    @Bind(id="zones",specification = Zone.class, aggregate = true, optional = true)
-    public void bindZone(Zone zone) {
-    	
-		String instance =  zone.getZoneName()+".lightning";
-		
-		Map<String,Object> properties = new HashMap<>();
-    	properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME), instance);
 
-    	serviceCreator.create(instance,properties);
-        attacher.link(instance,zone);
-    }
 
-    @Unbind(id="zones")
-    public void unbindZone(Zone zone) {
-    	
-		String instance = zone.getZoneName()+".lightning";
-		
-		serviceCreator.delete(instance);
-        attacher.unlink(instance,zone);
-    }
+
 
  
 

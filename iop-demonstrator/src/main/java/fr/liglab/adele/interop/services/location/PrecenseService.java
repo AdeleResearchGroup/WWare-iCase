@@ -9,7 +9,12 @@ import java.util.List;
 @ContextService
 public interface PrecenseService extends ServiceLayer {
     @State
-    String CHANGES = "Changes";
-    public String getchange(String state);
-    String getChanges();
+    String STATE_CHANGE = "state.change";
+    @State
+    String ZONE_ATTACHED="zone.attached";
+
+    boolean getCurrentState();
+    String getAttachedZone();
+   // public String getchange(String state);
+   // String getChanges();
 }
