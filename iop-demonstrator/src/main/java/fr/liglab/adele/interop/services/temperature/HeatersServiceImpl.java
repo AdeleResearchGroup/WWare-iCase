@@ -14,7 +14,9 @@ import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Unbind;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @ContextEntity(coreServices = {HeatersService.class, ServiceLayer.class})
@@ -30,6 +32,8 @@ public class HeatersServiceImpl implements HeatersService,ServiceLayer {
     private boolean ServiceStatus;
     @ContextEntity.State.Field(service = HeatersService.class,state = ZONE_ATTACHED)
     private String zoneName;
+    @ContextEntity.State.Field(service = HeatersService.class,state = HAS_EXT_SENSOR, value = "false")
+    private boolean hasExtSensor;
 
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
@@ -39,10 +43,17 @@ public class HeatersServiceImpl implements HeatersService,ServiceLayer {
 
     private static final Integer MIN_QOS = 100;
 
+
+
     //IMPLEMENTATION's FUNCTIONS
     @Override
     public boolean getCurrentState() {
         return ServiceStatus;
+    }
+
+    @Override
+    public boolean getExtSensorStatus() {
+        return hasExtSensor;
     }
 
     @Override
@@ -96,15 +107,12 @@ public class HeatersServiceImpl implements HeatersService,ServiceLayer {
     //ACTIONS
     @Bind(id="heaters")
     public void bindHeater(){
-        System.out.println("SRV(heat) ----BINDED HEATER: "+heaters.size());
         updateState();
     }
 
     @Unbind(id="heaters")
     public void unbindHeater(){
-        System.out.println("SRV(heat) --------UNBINDED HEATER:"+heaters.size());
         if(heaters.size()==0){
-            System.out.println("SRV(heat) service not available");
             updateState();
 
         }
@@ -112,8 +120,6 @@ public class HeatersServiceImpl implements HeatersService,ServiceLayer {
 
     @Modified(id="heaters")
     public void modifideheater(){
-        System.out.println("SRV(heat) HEATER MODIFIED!!!");
-        //pullCurrentState.get();
         updateState();
     }
 
@@ -121,21 +127,18 @@ public class HeatersServiceImpl implements HeatersService,ServiceLayer {
     //STATES CHANGE
     @ContextEntity.State.Push(service=HeatersService.class,state = HeatersService.ZONE_ATTACHED)
     public String pushZone(String zoneName){
-        System.out.println("Pushing zone attached...");
         return zoneName;}
 
     @ContextEntity.State.Push(service = HeatersService.class,state = HeatersService.STATE_CHANGE)
     public boolean pushService(boolean ServiceStatus){
-        System.out.println("SRV(heat) pushing State change...");
         return ServiceStatus;}
 
     @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQos =()->{
-        System.out.println("SRV(heat) lamba PULL of heating service"+String.valueOf((heaters.size()>=1)?true:false));
         int currentQoS=0;
         if  (heaters.size()>=2){
             currentQoS= 100;
-        }else if (heaters.size()>=2){
+        }else if (heaters.size()<2){
             currentQoS= 80;
         }
         return currentQoS;

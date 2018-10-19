@@ -24,8 +24,11 @@ import java.util.Map;
 public class RoomTemperatureControlApp implements ApplicationLayer{
 
     double OutsideTemperature = 0d;
+    String zoneTmp="";
 
     //SERVICE's STATES
+
+    private Map<String,String> outsideThermos = new HashMap<String, String>();
 
     //IMPLEMENTATION's FUNCTIONS
     public RoomTemperatureControlApp(){
@@ -58,41 +61,52 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
     //ACTIONS
     @Validate
     public void start(){
+        levelOfApplication();
         System.out.println("APP STARTED ROOM TEMPERATURE CONTROL");
         externalThermometerServiceCreator.create("extThermIOPServ");
         balconyThermometers.create("balconyThermometers");
         //extTempSimulatorHelper.create("extTemp");
         //extTemperatureSim.create("ExtTempSim");
-
+        levelOfApplication();
     }
     @Bind(id="extThermometer")
     public void bindservice(ExternalThermometerService ther){
         System.out.println("APP(heat) External Thermometer initilized");
-
+        levelOfApplication();
        // ther.setConnection(new String[] {Thermometer.class.getCanonicalName()});
     }
     @Modified(id="extThermometer")
     public void modifiedservice(ExternalThermometerService ther){
         System.out.println("APP(heat) External Thermometer Mod");
+
+        if(ther.isThermometerPresent()>0){
+            setTemperature((double)ther.getCurrentTemperature().getValue(),zoneTmp);
+        }
+
+        //setTemperature(balconyThermometerService.getCurrentTemperature(),zone);
+        levelOfApplication();
         //ther.getCurrentTemperature(new String[] {Thermometer.class.getCanonicalName()});
     }
 
-    @Modified(id="balconyThermometerService")
-    public void modifiedBalconyTher(BalconyThermometerService balThr){
-       // balconyThermometers.getInstance("balconyThermometers").getExternalZoneSensor();
-    }
 
     @Bind(id="balconyThermometerService")
     public void bindbalconyTh(BalconyThermometerService balThr){
         System.out.println("balcony SRV binded...");
+        levelOfApplication();
         // externalThermometerService.setConnection(new String[] {Thermometer.class.getCanonicalName()});
     }
-
     @Unbind(id="balconyThermometerService")
     public void unbindbalconyTh(BalconyThermometerService balThr){
         System.out.println("local Thermometer not available... requesting to Base...");
-       // externalThermometerService.setConnection(new String[] {Thermometer.class.getCanonicalName()});
+        levelOfApplication();
+        externalThermometerService.setConnection(new String[] {Thermometer.class.getCanonicalName()});
     }
+    @Modified(id="balconyThermometerService")
+    public void modifiedBalconyTher(BalconyThermometerService balThr){
+        levelOfApplication();
+        // balconyThermometers.getInstance("balconyThermometers").getExternalZoneSensor();
+    }
+
 
     @Bind(id="zones", specification = Zone.class, aggregate = true, optional = true)
     public void bindZone(Zone zone){
@@ -117,28 +131,38 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
         attacher.unlink(name,zone);
     }
 
-    @Modified(id="heaterSrv")
-    public void modifiedheaters(HeatersService srv){
-        System.out.println("APP(heat) Heater modified: "+srv.getServiceName());
-        balconyThermometerService.getExternalZoneSensor(((ZoneService)srv).getZone());
-        String tmp = (srv.getServiceName().split("\\."))[0];
-        setTemperature(280d,tmp);
-    }
+
     @Bind(id="heaterSrv")
     public void bindedHeaters(HeatersService srv){
         System.out.println("APP(heat) Heater srv binded: "+srv.getServiceName());
-        Double temp= (Double) balconyThermometerService.getExternalZoneSensor(((ZoneService)srv).getZone()).getValue();
-        String zone =srv.getServiceName();
+        levelOfApplication();
+        String zone =((ZoneService)srv).getZone();
+        String thermo = balconyThermometerService.getExternalZoneSensor(zone);
+        double temp = (double) balconyThermometerService.getCurrentTemperature(thermo).getValue();
+        outsideThermos.put(zone,thermo);
+        zoneTmp=zone;
 
-        System.out.println("temp got:"+temp);
-
-
-        if(temp==null){
+        if(thermo==null){
             setTemperature(200,zone);
         }else{
             setTemperature(temp,zone);
         }
 
+    }
+    @Unbind(id="heaterSrv")
+    public void unbindedHeaters(HeatersService srv){
+        String zone =((ZoneService)srv).getZone();
+        levelOfApplication();
+        outsideThermos.remove(zone);
+    }
+
+    @Modified(id="heaterSrv")
+    public void modifiedheaters(HeatersService srv){
+        System.out.println("APP(heat) Heater modified: "+srv.getServiceName());
+        levelOfApplication();
+        balconyThermometerService.getExternalZoneSensor(((ZoneService)srv).getZone());
+        String tmp = (srv.getServiceName().split("\\."))[0];
+        setTemperature(280d,tmp);
     }
 
 
@@ -165,6 +189,31 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
             }
         }
 
+    }
+
+    private byte levelOfApplication(){
+        System.out.println("**********************************");
+        int mainSrv = heaterSrvices.size();
+        int balconSrv = balconyThermometerService.getServiceQoS();
+        int extThSrv = externalThermometerService.getServiceQoS();
+
+        System.out.println("-----------LevelOfAPP--- "+mainSrv+" - "+balconSrv+" - "+extThSrv+" ------------------");
+        byte level=0b0;
+        //System.out.println(heaterSrvices.size());
+        if(mainSrv<1){
+            return 0b0;
+        }else{
+            level+=(byte)0b1;
+        }
+        if(extThSrv==100){
+            level+=(byte)0b10;
+        }
+        if(balconSrv==100){
+            level+=(byte)0b100;
+        }
+        System.out.println("App level:");
+        System.out.println(level);
+        return level;
     }
 
 

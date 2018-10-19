@@ -9,8 +9,11 @@ public @ContextService interface HeatersService extends ServiceLayer {
     String STATE_CHANGE = "state.change";
     @State
     String ZONE_ATTACHED="zone.attached";
+    @State
+    String HAS_EXT_SENSOR="external.sensor";
 
     boolean getCurrentState();
+    boolean getExtSensorStatus();
     double getPowerLevel();
     void setPowerLevel(double powerLevel);
 }

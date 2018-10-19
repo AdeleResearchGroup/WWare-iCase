@@ -14,9 +14,9 @@ public interface BalconyThermometerService extends ServiceLayer {
     @State
     String SERVICE_STATUS = "service.status";
 
-    String getServiceStatus();
+    boolean getServiceStatus();
 
 
-    Quantity<Temperature> getExternalZoneSensor(String zone);
-    Quantity<Temperature> getCurrentTemperature();
+    String getExternalZoneSensor(String zone);
+    Quantity<Temperature> getCurrentTemperature(String thermoRef);
 }
