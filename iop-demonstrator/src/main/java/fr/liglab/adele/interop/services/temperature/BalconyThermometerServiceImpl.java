@@ -7,10 +7,13 @@ import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Unbind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.Units;
 
@@ -21,7 +24,11 @@ import java.util.function.Supplier;
 
 @ContextEntity(coreServices = {BalconyThermometerService.class,ServiceLayer.class})
 public class BalconyThermometerServiceImpl implements BalconyThermometerService, ServiceLayer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
+
     //SERVICE's STATES
+
     @ContextEntity.State.Field(service = BalconyThermometerService.class,state = SERVICE_STATUS,value = "false")
     private boolean srvState;
 
@@ -35,6 +42,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     private static final Integer OBJ_SIZE = 32;
 
     //REQUIREMENTS
+
     @Requires(id="zone",optional = false,specification = Zone.class)
     List<Zone> zones;
 
@@ -43,16 +51,16 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     List<Thermometer> thermometers;
 
     //ACTIONS
+
     @Unbind(id="thermometer")
     public void unbindThermometer(Thermometer th){
         //set service state to false if no more thermometers
-        System.out.println("(SRV) Balc: thermometer UNbinded for a total of: "+thermometers.size());
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
     }
     @Bind(id="thermometer")
     public void bindThermometer(Thermometer th){
-        System.out.println("(SRV) Balc: thermometer binded for a total of: "+thermometers.size());
+        LOG.debug("(SRV) Balc: thermometer binded for a total of: "+thermometers.size());
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
     }
@@ -60,7 +68,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     //STATES CHANGE
     @Modified(id="thermometer")
     public void modifiedThermo(Thermometer th){
-        System.out.println("(SRV) Balc: thermometer MODED for a total of: "+thermometers.size());
+        LOG.debug("(SRV) Balc: thermometer binded for a total of: "+thermometers.size());
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
     }
@@ -70,14 +78,11 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
 
     @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQos =()->{
-        System.out.println("SRV(balc) lamba PULL of heating service");
         int currentQoS=(thermometers.size()==0)?0:100;
         return currentQoS;
     };
 
     //IMPLEMENTATION's FUNCTIONS
-
-
 
     @Override
     public int getMinQos() {
@@ -102,66 +107,48 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
 
     @Override
     public Quantity<Temperature> getCurrentTemperature(String thermoRef) {
-        Quantity<Temperature> temp = Quantities.getQuantity(213.15,Units.KELVIN);
+        Quantity<Temperature> temp = Quantities.getQuantity(-2.0,Units.KELVIN);
         for(Thermometer Th :thermometers){
-            if (Th.getSerialNumber().equals(thermoRef)){
-                return Th.getTemperature();
+            if ((Th.getSerialNumber().equals(thermoRef))&&(Th.getTemperature()!=null)){
+                    return Th.getTemperature();
             }
-            System.out.println(((GenericDevice)Th).toString());
-            System.out.println(((GenericDevice)Th).getSerialNumber());
-            temp.add(Th.getTemperature());
         }
-        return null;
+        return temp;
     }
 
     //FUNCTIONS
 
     /**
      *
-     * @param zne zone for which an outside close thermometer must be found
+     * @param zne zone for which an outside close thermometer must be found, if there're none, then "none" is returned
      * @return returns the name of the instanciated thermometer; it must be close to the zone and not be inside other zones,
      * returns none if no close thermometers are found
      */
     @Override
     public String getExternalZoneSensor(String zne) {
 
-        System.out.println("GETTING CLOSEST THERMO...");
+        LOG.info("finding closest thermometer");
         double ShortestDistance = 99999;
         int index=0;
         int ClosestThermometerIndex=0;
-
         for(Zone zone:zones){
-            System.out.println("matching Zone..."+zone.getZoneName()+" is equal to: "+zne);
             if(zone.getZoneName().equals(zne)){
-                System.out.println("Match found...");
                 for(Thermometer Thr:thermometers){
-                    System.out.println("Searching in thermometers..."+Thr);
-
                     int Left = zone.getLeftTopAbsolutePosition().x-((LocatedObject) Thr).getPosition().x+OBJ_SIZE;
                     int Right = ((LocatedObject) Thr).getPosition().x-zone.getRightBottomAbsolutePosition().x;
                     int Top = zone.getLeftTopAbsolutePosition().y-((LocatedObject) Thr).getPosition().y+OBJ_SIZE;
                     int Bottom = ((LocatedObject) Thr).getPosition().y-zone.getRightBottomAbsolutePosition().y;
-
-                    System.out.println("L:"+Left+"R:"+Right+"T:"+Top+"B:"+Bottom);
-
                     Left=(Left>0)?Left:0;
                     Right=(Right>0)?Right:0;
                     Top=(Top>0)?Top:0;
                     Bottom=(Bottom>0)?Bottom:0;
-
-
-                    System.out.println("L:"+Left+"R:"+Right+"T:"+Top+"B:"+Bottom);
-
                     if (Left==0&&Right==0&&Top==0&&Bottom==0){//Thermometer right next to zone
-                        System.out.println("Getting Temp from Thr: "+Thr);
                         return Thr.getSerialNumber();
                     }else{
-
                         double distance=Math.sqrt(Math.pow((double)Left,2)+Math.pow((double)Right,2)+Math.pow((double)Top,2)+Math.pow((double)Bottom,2));
-                        System.out.println("Calculating distance..."+distance);
+                        //calculating distance...
                         if (ShortestDistance>distance){
                             ShortestDistance=distance;
-                            System.out.println();
                             ClosestThermometerIndex=index;
                         }
                     }
@@ -169,17 +156,11 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
                 }
             }
         }
-
-
-
         if (ShortestDistance < 400){
-            System.out.println("Getting Temp from index: "+ClosestThermometerIndex);
-            System.out.println(thermometers.get(ClosestThermometerIndex));
             return thermometers.get(ClosestThermometerIndex).getSerialNumber();
         }else{
             return "none";
         }
-
     }
 
     //FUNCTIONS
@@ -189,10 +170,6 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         }else{
             pushService(true);
         }
-
     }
-
-
-
 
 }

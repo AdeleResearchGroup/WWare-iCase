@@ -1,17 +1,17 @@
 package fr.liglab.adele.interop.demonstrator;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import fr.liglab.adele.cream.annotations.provider.Creator;
+import fr.liglab.adele.icasa.device.light.Photometer;
+import fr.liglab.adele.icasa.layering.services.location.ZoneService;
+import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
+import fr.liglab.adele.interop.demonstrator.home.lightning.HomeLightningApplication;
 import fr.liglab.adele.interop.demonstrator.home.lightning.LightFollowApplication;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
-import fr.liglab.adele.interop.demonstrator.test.testApp;
+import fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController;
+import fr.liglab.adele.iop.device.api.IOPLookupService;
+import fr.liglab.adele.iop.device.api.IOPService;
 import org.apache.felix.ipojo.annotations.*;
-
 import org.apache.felix.ipojo.dependency.interceptors.DependencyInterceptor;
 import org.apache.felix.ipojo.dependency.interceptors.ServiceRankingInterceptor;
 import org.apache.felix.ipojo.dependency.interceptors.ServiceTrackingInterceptor;
@@ -21,20 +21,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 
-import fr.liglab.adele.cream.annotations.provider.Creator;
-
-import fr.liglab.adele.icasa.location.Zone;
-import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
-
-import fr.liglab.adele.interop.demonstrator.home.lightning.HomeLightningApplication;
-
-import fr.liglab.adele.icasa.layering.services.location.ZoneService;
-import fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController;
-
-import fr.liglab.adele.iop.device.api.IOPLookupService;
-import fr.liglab.adele.iop.device.api.IOPService;
-
-import fr.liglab.adele.icasa.device.light.Photometer;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Component(immediate = true)
 @Provides(specifications={PeriodicRunnable.class, ServiceTrackingInterceptor.class, ServiceRankingInterceptor.class})
@@ -51,7 +39,6 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Creator.Field Creator.Entity<HomeLightningApplication> lightningApplicationCreator;
     @Creator.Field Creator.Entity<LightFollowApplication> followMeApplicationCreator;
-    @Creator.Field Creator.Entity<testApp> tests;
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
@@ -62,7 +49,6 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Validate
     public void start(){
-    	tests.create("tempSim");
     	lightningApplicationCreator.create("LightApp");
 		followMeApplicationCreator.create("FollowApp");
 		roomTemperatureApp.create("TemperatureCloningApp");

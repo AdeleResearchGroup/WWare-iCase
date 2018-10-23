@@ -1,24 +1,20 @@
 package fr.liglab.adele.interop.services.lightning;
 
-import java.util.List;
-import java.util.function.Supplier;
-
-import org.apache.felix.ipojo.annotations.*;
-
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtension;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
-
+import fr.liglab.adele.icasa.device.light.BinaryLight;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.layering.services.location.ZoneServiceFunctionalExtension;
-
 import fr.liglab.adele.icasa.location.LocatedObject;
-
 import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay;
 import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay.PartOfTheDay;
+import org.apache.felix.ipojo.annotations.Modified;
+import org.apache.felix.ipojo.annotations.Requires;
 
-import fr.liglab.adele.icasa.device.light.BinaryLight;
+import java.util.List;
+import java.util.function.Supplier;
 
 
 

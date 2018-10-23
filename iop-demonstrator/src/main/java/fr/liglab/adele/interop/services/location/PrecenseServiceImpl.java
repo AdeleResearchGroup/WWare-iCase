@@ -14,7 +14,6 @@ import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
 
-
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -82,10 +81,7 @@ public class PrecenseServiceImpl implements PrecenseService, ServiceLayer {
 	@Modified(id="sensor")
     private void sensorTriggered(PresenceSensor presenceSensor){
 	    if(presenceSensors.size()>0){
-	        System.out.println("SRV(light) 1./////////////////////////////////////////////////////////////sensorUpdate");
             updateState();
-	        //System.out.println(presenceSensor.getSensedPresence());
-           // System.out.println(((LocatedObject)presenceSensor).getZone());
             for (BinaryLight light:lights) {
                 if(((LocatedObject)light).getZone().equals(((LocatedObject)presenceSensor).getZone())){
                     if(presenceSensor.getSensedPresence()){
@@ -111,17 +107,14 @@ public class PrecenseServiceImpl implements PrecenseService, ServiceLayer {
     //STATES CHANGE
     @ContextEntity.State.Push(service=PrecenseService.class,state = PrecenseService.ZONE_ATTACHED)
     public String pushZone(String zoneName){
-        System.out.println("Pushing zone attached...");
         return zoneName;}
 
     @ContextEntity.State.Push(service = PrecenseService.class,state = PrecenseService.STATE_CHANGE)
     public boolean pushService(boolean ServiceStatus){
-        System.out.println("SRV(light) pushing State change");
         return ServiceStatus;}
 
     @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQoS = ()-> {
-        System.out.println("SRV(light) lamba PULL of presence service");
     	int currentQoS = 0;
     	return currentQoS;
     };

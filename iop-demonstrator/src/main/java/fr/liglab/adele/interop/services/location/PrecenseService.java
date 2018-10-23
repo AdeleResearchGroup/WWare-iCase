@@ -4,8 +4,6 @@ import fr.liglab.adele.cream.annotations.ContextService;
 import fr.liglab.adele.cream.annotations.State;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 
-import java.util.List;
-
 @ContextService
 public interface PrecenseService extends ServiceLayer {
     @State

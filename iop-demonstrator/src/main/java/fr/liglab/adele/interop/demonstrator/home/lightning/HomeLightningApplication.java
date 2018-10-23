@@ -1,32 +1,22 @@
 package fr.liglab.adele.interop.demonstrator.home.lightning;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.provider.Creator;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
-
-import org.apache.felix.service.command.Descriptor;
-
+import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
+import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
+import fr.liglab.adele.icasa.layering.services.location.ZoneService;
+import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.interop.services.lightning.LightningService;
+import fr.liglab.adele.interop.services.lightning.LightningServiceImpl;
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.ServiceProperty;
 import org.apache.felix.ipojo.annotations.Unbind;
 
-import fr.liglab.adele.icasa.location.Zone;
-import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay.PartOfTheDay;
-
-import fr.liglab.adele.interop.services.lightning.LightningService;
-
-import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
-
-
-import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
-import fr.liglab.adele.icasa.layering.services.location.ZoneService;
-import fr.liglab.adele.interop.services.lightning.LightningServiceImpl;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @ContextEntity(coreServices = {ApplicationLayer.class})

@@ -1,12 +1,12 @@
 package fr.liglab.adele.interop.services.weather;
 
+import fr.liglab.adele.cream.annotations.entity.ContextEntity;
+import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
-import fr.liglab.adele.cream.annotations.entity.ContextEntity;
-import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 
 
 

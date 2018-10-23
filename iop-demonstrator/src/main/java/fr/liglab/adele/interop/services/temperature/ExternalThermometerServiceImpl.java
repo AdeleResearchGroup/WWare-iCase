@@ -4,11 +4,14 @@ import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
-import fr.liglab.adele.icasa.location.LocatedObject;
+import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import fr.liglab.adele.iop.device.api.IOPLookupService;
 import fr.liglab.adele.iop.device.api.IOPService;
-
 import org.apache.felix.ipojo.annotations.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tec.units.ri.quantity.Quantities;
+import tec.units.ri.unit.Units;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Temperature;
@@ -18,6 +21,8 @@ import java.util.function.Supplier;
 
 @ContextEntity(coreServices = {ExternalThermometerService.class, ServiceLayer.class })
 public class ExternalThermometerServiceImpl implements ExternalThermometerService, ServiceLayer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
     boolean requestmade =false;
 
     //SERVICE's STATES
@@ -39,50 +44,35 @@ public class ExternalThermometerServiceImpl implements ExternalThermometerServic
 
     //REQUIREMENTS
 
-
     @Requires(optional = false)
     private IOPLookupService lookup;
-
-   /* @Requires(id="outThermo",specification = Thermometer.class,filter = "(!(locatedobject.object.zone="+LocatedObject.LOCATION_UNKNOWN+"))")
-    List<Thermometer> thermometers;*/
 
     @Requires(id="outThermo",specification = Thermometer.class,optional = true)
     @ContextRequirement(spec = IOPService.class)
     List<Thermometer> thermometers;
 
-    //factory.name = TemperatureSensorService
     //CREATORS
 
     //ACTIONS
 
     @Validate
     public void start(){
-        System.out.println("IOP TERMOMETER SRV STARTED");
+        LOG.info("Connection to Xware stablished");
         getConnectionStatus();
     }
 
-
-
     @Modified(id="outThermo")
     public void thermoMod(Thermometer thr){
-        System.out.println("(SRV) exttempSim out Thermo modified,# of THRS: "+thermometers.size());
-        System.out.println(thr.getTemperature());
         updateState();
-//        currentTemperature=Quantities.getQuantity(23, Units.KELVIN);
     }
     @Bind(id="outThermo")
     public void bindThermometer(Thermometer thr){
-        System.out.println("(SRV) extTh: Binded Thermometer for a total of: "+thermometers.size());
         updateState();
-
-
     }
     @Unbind(id="outThermo")
     public void unbindThermometer(Thermometer thr){
         updateState();
     }
-
-
 
     //STATES CHANGE
     @ContextEntity.State.Push(service = ExternalThermometerService.class,state = ExternalThermometerService.CONNECTION_STATUS)
@@ -94,9 +84,7 @@ public class ExternalThermometerServiceImpl implements ExternalThermometerServic
 
     @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQos =()->{
-        System.out.println("SRV(heat) lamba PULL of heating service"+String.valueOf((thermometers.size()>=1)?true:false));
         int currentQoS=0;
-
         if  (thermometers.size()>=1){
             currentQoS= 100;
         }else if (thermometers.size()<1){
@@ -125,7 +113,7 @@ public class ExternalThermometerServiceImpl implements ExternalThermometerServic
     @Override
     public void setConnection(String[] RequestStr) {
         if(!isRequestmade){
-            System.out.println("IOP lookup: "+RequestStr);
+            LOG.info("Making request to Base",RequestStr);
             connStat=true;
             pushconnStat(true);
             lookup.consider(RequestStr,Collections.emptyMap());
@@ -135,12 +123,11 @@ public class ExternalThermometerServiceImpl implements ExternalThermometerServic
 
     @Override
     public Quantity<Temperature> getCurrentTemperature() {
-        Quantity<Temperature> temp;
+        Quantity<Temperature> temp = Quantities.getQuantity(0.0, Units.KELVIN);;
         for(Thermometer th:thermometers){
             temp=th.getTemperature();
         }
-
-        return null;
+        return temp;
     }
 
     @Override
