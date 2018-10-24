@@ -4,6 +4,7 @@ import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
 import fr.liglab.adele.icasa.device.GenericDevice;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
+import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.location.Zone;
@@ -46,20 +47,20 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Requires(id="zone",optional = false,specification = Zone.class)
     List<Zone> zones;
 
-    @Requires(id="thermometer",optional = false,filter="(& (locatedobject.object.zone="+LocatedObject.LOCATION_UNKNOWN+") (!(objectClass=fr.liglab.adele.iop.device.api.IOPService)) )",specification = Thermometer.class)
+    @Requires(id="thermometer",optional = false,filter="(& (locatedobject.object.zone="+LocatedObject.LOCATION_UNKNOWN+") (!(objectClass=fr.liglab.adele.iop.device.api.IOPService)) )",specification = ThermometerExt.class)
     @ContextRequirement(spec = LocatedObject.class)
-    List<Thermometer> thermometers;
+    List<ThermometerExt> thermometers;
 
     //ACTIONS
 
     @Unbind(id="thermometer")
-    public void unbindThermometer(Thermometer th){
+    public void unbindThermometer(ThermometerExt th){
         //set service state to false if no more thermometers
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
     }
     @Bind(id="thermometer")
-    public void bindThermometer(Thermometer th){
+    public void bindThermometer(ThermometerExt th){
         LOG.debug("(SRV) Balc: thermometer binded for a total of: "+thermometers.size());
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
@@ -67,7 +68,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
 
     //STATES CHANGE
     @Modified(id="thermometer")
-    public void modifiedThermo(Thermometer th){
+    public void modifiedThermo(ThermometerExt th){
         LOG.debug("(SRV) Balc: thermometer binded for a total of: "+thermometers.size());
         AppQoS=(thermometers.size()==0)?0:100;
         updateState();
@@ -108,7 +109,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Override
     public Quantity<Temperature> getCurrentTemperature(String thermoRef) {
         Quantity<Temperature> temp = Quantities.getQuantity(-2.0,Units.KELVIN);
-        for(Thermometer Th :thermometers){
+        for(ThermometerExt Th :thermometers){
             if ((Th.getSerialNumber().equals(thermoRef))&&(Th.getTemperature()!=null)){
                     return Th.getTemperature();
             }
@@ -133,7 +134,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         int ClosestThermometerIndex=0;
         for(Zone zone:zones){
             if(zone.getZoneName().equals(zne)){
-                for(Thermometer Thr:thermometers){
+                for(ThermometerExt Thr:thermometers){
                     int Left = zone.getLeftTopAbsolutePosition().x-((LocatedObject) Thr).getPosition().x+OBJ_SIZE;
                     int Right = ((LocatedObject) Thr).getPosition().x-zone.getRightBottomAbsolutePosition().x;
                     int Top = zone.getLeftTopAbsolutePosition().y-((LocatedObject) Thr).getPosition().y+OBJ_SIZE;

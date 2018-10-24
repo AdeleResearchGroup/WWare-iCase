@@ -65,36 +65,6 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
         balconyThermometers.create("balconyThermometers");
         localAM();
     }
-    @Bind(id="extThermometer")
-    public void bindservice(ExternalThermometerService ther){
-
-        localAM();
-    }
-    @Modified(id="extThermometer")
-    public void modifiedservice(ExternalThermometerService ther){
-        if(ther.isThermometerPresent()>0){
-            setTemperature(zoneTmp);
-        }
-        localAM();
-    }
-
-
-    @Bind(id="balconyThermometerService")
-    public void bindbalconyTh(BalconyThermometerService balThr){
-        localAM();
-    }
-    @Unbind(id="balconyThermometerService")
-    public void unbindbalconyTh(BalconyThermometerService balThr){
-        LOG.warn("Local thermometer not found, asking Base...",balThr);
-        localAM();
-        externalThermometerService.setConnection(new String[] {Thermometer.class.getCanonicalName()});
-    }
-    @Modified(id="balconyThermometerService")
-    public void modifiedBalconyTher(BalconyThermometerService balThr){
-        localAM();
-    }
-
-
     @Bind(id="zones", specification = Zone.class, aggregate = true, optional = true)
     public void bindZone(Zone zone){
         String instance = zone.getZoneName()+".heaters";
@@ -111,6 +81,36 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
 
         roomHeaterServices.delete(name);
         attacher.unlink(name,zone);
+    }
+
+    @Bind(id="extThermometer")
+    public void bindservice(ExternalThermometerService srv){
+        localAM();
+    }
+    @Modified(id="extThermometer")
+    public void modifiedservice(ExternalThermometerService srv){
+        if(srv.isThermometerPresent()>0){
+            setTemperature(zoneTmp);
+        }
+        localAM();
+
+    }
+
+
+    @Bind(id="balconyThermometerService")
+    public void bindbalconyTh(BalconyThermometerService srv){
+        localAM();
+
+    }
+    @Unbind(id="balconyThermometerService")
+    public void unbindbalconyTh(BalconyThermometerService srv){
+        LOG.warn("Local thermometer not found, asking Base...",srv);
+        localAM();
+        externalThermometerService.setConnection(new String[] {Thermometer.class.getCanonicalName()});
+    }
+    @Modified(id="balconyThermometerService")
+    public void modifiedBalconyTher(BalconyThermometerService srv){
+        localAM();
     }
 
 
@@ -131,7 +131,6 @@ public class RoomTemperatureControlApp implements ApplicationLayer{
     @Modified(id="heaterSrv")
     public void modifiedheaters(HeatersService srv){
         localAM();
-        balconyThermometerService.getExternalZoneSensor(((ZoneService)srv).getZone());
         String tmp = (srv.getServiceName().split("\\."))[0];
         setTemperature(tmp);
     }
