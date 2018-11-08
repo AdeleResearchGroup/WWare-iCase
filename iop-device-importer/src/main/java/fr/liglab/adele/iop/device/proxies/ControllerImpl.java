@@ -524,8 +524,6 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 				}
 			}
 		}
-
-		System.out.println("**********************************************");
 	}
 
 	private class IOPServiceDeclarationManager extends Thread {

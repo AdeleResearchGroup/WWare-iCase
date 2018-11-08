@@ -8,7 +8,7 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Temperature;
 
 @ContextService
-public interface ExternalThermometerService extends ServiceLayer {
+public interface RemoteThermometerService extends ServiceLayer {
     @State
     String STATE_CHANGE = "state.change";
     @State
@@ -17,8 +17,12 @@ public interface ExternalThermometerService extends ServiceLayer {
     String REQUEST_MADE = "request.made";
 
     boolean getCurrentState();
+
     boolean getConnectionStatus();
+
     void setConnection(String[] Request);
+
     Quantity<Temperature> getCurrentTemperature();
+
     int isThermometerPresent();
 }
