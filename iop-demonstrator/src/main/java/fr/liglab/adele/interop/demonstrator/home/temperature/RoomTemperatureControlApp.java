@@ -7,27 +7,30 @@ import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
-import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.interop.services.location.ZonesService;
+import fr.liglab.adele.interop.services.location.ZonesServiceImpl;
 import fr.liglab.adele.interop.services.temperature.*;
 import org.apache.felix.ipojo.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.plaf.synth.SynthInternalFrameUI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
-@ContextEntity(coreServices = {ApplicationLayer.class})
+
+@ContextEntity(coreServices = {ApplicationLayer.class,RoomTemperatureControl.class})
 @Provides(specifications = RoomTemperatureControlApp.class)
 
-public class RoomTemperatureControlApp implements ApplicationLayer {
+public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperatureControl {
 
     private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
 
-    //SERVICE's STATES
+    //APPLICATION's STATES
+    @ContextEntity.State.Field(service = RoomTemperatureControl.class, state = APPLICATION_STATE, value="init")
+    private String appState;
 
 
     //IMPLEMENTATION's FUNCTIONS
@@ -46,55 +49,67 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
     @Requires(id = "balconyThermometerService", specification = BalconyThermometerService.class, optional = true)
     private BalconyThermometerService balconyThermometerService;
 
+    @Requires(id="zonesService",specification = ZonesService.class,optional = true)
+    private ZonesService zonesService;
+
+   // @Requires(id="zones",specification = ZonesService.class,optional = true)
+   // private ZonesService zonesService;
+
 
     //CREATORS
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO)
     Creator.Relation<ZoneService, Zone> attacher;
+
     private @Creator.Field
     Creator.Entity<RemoteThermometerServiceImpl> externalThermometerServiceCreator;
     private @Creator.Field
     Creator.Entity<HeatersServiceImpl> roomHeaterServices;
     private @Creator.Field
     Creator.Entity<BalconyThermometerServiceImpl> balconyThermometers;
+    private @Creator.Field
+    Creator.Entity<ZonesServiceImpl> zonesServices;
 
 
     //ACTIONS
     @Validate
     public void start() {
-        appAM();
         LOG.info("Temperature control App Started");
         externalThermometerServiceCreator.create("extThermIOPServ");
         balconyThermometers.create("balconyThermometers");
-        appAM();
+        zonesServices.create("zonesService");
     }
 
-    @Bind(id = "zones", specification = Zone.class, aggregate = true, optional = true)
-    public void bindZone(Zone zone) {
-        String instance = zone.getZoneName() + ".heaters";
+    @Modified(id="zonesService")
+    public void modifiedZone(){
+        String action = zonesService.getServiceStatus().split(":")[0];
+        String zoneName = zonesService.getServiceStatus().split(":")[1];
+        Zone zone=zonesService.getZone(zoneName);
+        String instance = zoneName + ".heaters";
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put(ContextEntity.State.id(ServiceLayer.class, ServiceLayer.NAME), instance);
-
-        roomHeaterServices.create(instance, properties);
-        attacher.link(instance, zone);
+        if(action.equals("bind")){
+            Map<String, Object> properties = new HashMap<>();
+            properties.put(ContextEntity.State.id(ServiceLayer.class, ServiceLayer.NAME), instance);
+            if(roomHeaterServices.getInstance(instance)==null){
+                roomHeaterServices.create(instance, properties);
+                attacher.link(instance,zone);
+                setState();
+            }
+        }else if(action.equals("unbind")){
+            roomHeaterServices.delete(instance);
+            attacher.unlink(instance,zone);
+            setState();
+        }
     }
 
-    @Unbind(id = "zones")
-    public void unbindzone(Zone zone) {
-        String name = zone.getZoneName() + ".heaters";
 
-        roomHeaterServices.delete(name);
-        attacher.unlink(name, zone);
-    }
 
     @Bind(id = "remoteThermometer")
     public void bindservice(RemoteThermometerService srv) {
-        appAM();
     }
 
     @Unbind(id = "remoteThermometer")
     public void unbindservice(RemoteThermometerService srv) {
-        appAM();
+
     }
 
     @Modified(id = "remoteThermometer")
@@ -105,26 +120,24 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
                 setTemperature(((ZoneService) ht).getZone());
             }
         }
-        appAM();
+
     }
 
 
     @Bind(id = "balconyThermometerService")
     public void bindbalconyTh(BalconyThermometerService srv) {
-        appAM();
+
 
     }
 
     @Unbind(id = "balconyThermometerService")
     public void unbindbalconyTh(BalconyThermometerService srv) {
         LOG.warn("No Local thermometers left, asking Base...", srv);
-        appAM();
         remoteThermometerService.setConnection(new String[]{Thermometer.class.getCanonicalName()});
     }
 
     @Modified(id = "balconyThermometerService")
     public void modifiedBalconyTher(BalconyThermometerService srv) {
-        appAM();
         for (HeatersService htr : heaterSrvices) {
             String zone = ((ZoneService) htr).getZone();
             setTemperature(zone);
@@ -134,7 +147,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
 
     @Bind(id = "heaterService")
     public void bindedHeaters(HeatersService srv) {
-        appAM();
+
         String zone = ((ZoneService) srv).getZone();
         setTemperature(zone);
     }
@@ -142,19 +155,49 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
     @Unbind(id = "heaterService")
     public void unbindedHeaters(HeatersService srv) {
         String zone = ((ZoneService) srv).getZone();
-        appAM();
+
         balconyThermometerService.removeAsignedThermometer(zone);
     }
 
     @Modified(id = "heaterService")
     public void modifiedheaters(HeatersService srv) {
-        appAM();
+
         String tmp = (srv.getServiceName().split("\\."))[0];
         setTemperature(tmp);
     }
 
+    @ContextEntity.State.Push(service=RoomTemperatureControl.class, state = RoomTemperatureControl.APPLICATION_STATE)
+    public String pushApp(String appState){return appState;}
+
 
     //FUNCTIONS
+
+    public void setState(){
+        double availabilityHeaters=0;
+        double availabilityLocalThermos=0;
+        double availabilityRemoteThermos=0;
+        int zonesWithHeater=0;
+        int zonesWithLocalThermo=0;
+        Map<String,String> assignedThermometers=new HashMap<String, String>();
+
+        if(balconyThermometerService.getServiceStatus()!=null){
+            assignedThermometers=balconyThermometerService.getAsignedThermometers();
+        }
+
+        zonesWithLocalThermo=assignedThermometers.size();
+        for(HeatersService htrSrv:heaterSrvices){
+            if(htrSrv.getServiceQoS()>0){
+                zonesWithHeater+=1;
+            }
+        }
+
+
+        availabilityHeaters=(zonesWithHeater>0)?(((double)zonesWithHeater/(double)zonesService.getZoneList().size()))*100:0;
+        availabilityLocalThermos=(zonesWithLocalThermo>0)?((double)zonesWithLocalThermo/(double)(zonesService.getZoneList().size()))*100:0;
+        availabilityRemoteThermos=(remoteThermometerService.getServiceQoS()==100)?(availabilityHeaters-availabilityLocalThermos):0;
+
+        pushApp("Heaters: "+Math.round(availabilityHeaters)+"%, BalcTher: "+Math.round(availabilityLocalThermos)+"%, RemTher: "+availabilityRemoteThermos+"%");
+    }
 
     /**
      * Sets the power level of the heaters in a zone, depending on the zoneAM and the appAm level
@@ -162,7 +205,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
      * @param zone Zone for which the temperature will be attempted to be set
      */
     public void setTemperature(String zone) {
-
+        setState();
+        //appState= String.valueOf(appAM()+zoneAM(zone));
         LOG.info("AM (global-zone:"+zone+"): (" + appAM() + "-" + zoneAM(zone)+")");
         switch (zoneAM(zone)) {
             case 1:
@@ -262,6 +306,13 @@ public class RoomTemperatureControlApp implements ApplicationLayer {
         byte balconyThermometerSrv = 0b0;
         byte externalThermometerSrv = 0b0;
         byte AMstatusLevel = 0b0;
+
+        int mainSrv = heaterSrvices.size();
+        int balconSrv = balconyThermometerService.getServiceQoS();
+
+        if((mainSrv < 1)&&(balconSrv == 100)){
+            
+        }
 
         int balconyState=(balconyThermometerService.getAsignedThermometer(zone)!=null)?1:0;
 

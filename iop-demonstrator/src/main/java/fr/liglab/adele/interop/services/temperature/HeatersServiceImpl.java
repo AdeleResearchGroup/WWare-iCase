@@ -9,11 +9,9 @@ import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.layering.services.location.ZoneServiceFunctionalExtension;
 import fr.liglab.adele.icasa.location.LocatedObject;
+import fr.liglab.adele.icasa.location.Zone;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
-import org.apache.felix.ipojo.annotations.Bind;
-import org.apache.felix.ipojo.annotations.Modified;
-import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.Unbind;
+import org.apache.felix.ipojo.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +29,6 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
     ZoneService zone;
 
     //SERVICE's STATES
-    @ContextEntity.State.Field(service = HeatersService.class, state = STATE_CHANGE, value = "false")
-    private boolean ServiceStatus;
     @ContextEntity.State.Field(service = HeatersService.class, state = ZONE_ATTACHED)
     private String zoneName;
     @ContextEntity.State.Field(service = HeatersService.class, state = HAS_EXT_SENSOR, value = "false")
@@ -41,17 +37,13 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
 
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
-    private int AppQoS;
+    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS, value = "0",directAccess = true)
+    private int SrvQoS;
 
     private static final Integer MIN_QOS = 100;
 
 
     //IMPLEMENTATION's FUNCTIONS
-    @Override
-    public boolean getCurrentState() {
-        return ServiceStatus;
-    }
 
     @Override
     public boolean getExtSensorStatus() {
@@ -88,7 +80,7 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
 
     @Override
     public int getServiceQoS() {
-        return (heaters.size() >= 1) ? 100 : 0;
+        return SrvQoS;
     }
 
     @Override
@@ -107,19 +99,21 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
     //ACTIONS
     @Bind(id = "heaters")
     public void bindHeater() {
+        SrvQoS = (heaters.size()>=1)?100:0;
         updateState();
     }
 
     @Unbind(id = "heaters")
     public void unbindHeater() {
+        SrvQoS = (heaters.size()>=1)?100:0;
         if (heaters.size() == 0) {
             updateState();
-
         }
     }
 
     @Modified(id = "heaters")
     public void modifideheater() {
+        SrvQoS = (heaters.size()>=1)?100:0;
         updateState();
     }
 
@@ -130,31 +124,28 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
         return zoneName;
     }
 
-    @ContextEntity.State.Push(service = HeatersService.class, state = HeatersService.STATE_CHANGE)
-    public boolean pushService(boolean ServiceStatus) {
-        return ServiceStatus;
-    }
-
     @ContextEntity.State.Pull(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQos = () -> {
-        int currentQoS = 0;
-        if (heaters.size() >= 2) {
-            currentQoS = 100;
-        } else if (heaters.size() < 2) {
-            currentQoS = 80;
-        }
+        int currentQoS = (heaters.size() >=1) ? 0 : 100;
         return currentQoS;
     };
+
+    //@ContextEntity.State.Push(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
+    // public String pushState(String QoS){return QoS;}
+
 
 
     //FUNCTIONS
     private void updateState() {
-        if (getCurrentState()) {
-            pushService(false);
-        } else {
-            pushService(true);
+        int currQoS = 0;
+        if (heaters.size() >= 2) {
+            currQoS = 100;
+        } else if (heaters.size() < 2 && heaters.size() > 0) {
+            currQoS = 80;
+        }else{
+            currQoS = 0;
         }
-
+        //pushState(String.valueOf(currQoS));
     }
 
 }
