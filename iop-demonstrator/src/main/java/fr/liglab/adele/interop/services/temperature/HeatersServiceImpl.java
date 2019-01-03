@@ -101,6 +101,7 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
     public void bindHeater() {
         SrvQoS = (heaters.size()>=1)?100:0;
         updateState();
+
     }
 
     @Unbind(id = "heaters")
@@ -124,11 +125,11 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
         return zoneName;
     }
 
-    @ContextEntity.State.Pull(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
+  /*  @ContextEntity.State.Pull(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
     private Supplier<Integer> currentQos = () -> {
         int currentQoS = (heaters.size() >=1) ? 0 : 100;
         return currentQoS;
-    };
+    };*/
 
     //@ContextEntity.State.Push(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
     // public String pushState(String QoS){return QoS;}

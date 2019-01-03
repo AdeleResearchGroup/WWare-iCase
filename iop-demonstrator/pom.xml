@@ -104,6 +104,15 @@
 			<version>${project.version}</version>
 			<type>bundle</type>
 		</dependency>
+
+		<dependency>
+			<groupId>org.influxdb</groupId>
+			<artifactId>influxdb-java</artifactId>
+			<version>2.15-SNAPSHOT</version>
+
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
     
 	</dependencies>
 
@@ -121,12 +130,15 @@
 						<Bundle-SymbolicName>
 							${project.artifactId}
 						</Bundle-SymbolicName>
-						<Include-Resource>{maven-resources},
-							META-INF/NOTICE = NOTICE
-						</Include-Resource>
+						<Include-Resource>{maven-resources}</Include-Resource>
+						<Embed-Dependency>influxdb-java,groupId=com.squareup.*,groupId=org.msgpack.*</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive>
+						<Import-Package>!android.*,!kotlin.*,!*.conscrypt.*,!javax.annotation.*,*</Import-Package>
 					</instructions>
 				</configuration>
 			</plugin>
+
+
 
 			<plugin>
 				<groupId>org.apache.felix</groupId>

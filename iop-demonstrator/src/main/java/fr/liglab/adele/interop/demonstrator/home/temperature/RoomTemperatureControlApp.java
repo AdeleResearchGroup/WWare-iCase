@@ -8,6 +8,8 @@ import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.interop.services.database.influxService;
+import fr.liglab.adele.interop.services.database.influxServiceImpl;
 import fr.liglab.adele.interop.services.location.ZonesService;
 import fr.liglab.adele.interop.services.location.ZonesServiceImpl;
 import fr.liglab.adele.interop.services.temperature.*;
@@ -43,6 +45,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     @ContextRequirement(spec = {ZoneService.class})
     private List<HeatersService> heaterSrvices;
 
+    @Requires(id = "database", specification = influxService.class, optional = true)
+    private influxService influxDB;
+
     @Requires(id = "remoteThermometer", specification = RemoteThermometerService.class, optional = true)
     private RemoteThermometerService remoteThermometerService;
 
@@ -61,6 +66,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     Creator.Relation<ZoneService, Zone> attacher;
 
     private @Creator.Field
+    Creator.Entity<influxServiceImpl> DBserice;
+    private @Creator.Field
     Creator.Entity<RemoteThermometerServiceImpl> externalThermometerServiceCreator;
     private @Creator.Field
     Creator.Entity<HeatersServiceImpl> roomHeaterServices;
@@ -70,13 +77,30 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     Creator.Entity<ZonesServiceImpl> zonesServices;
 
 
+   /* private String dbName = "aTimeSeries";*/
+
+
+
     //ACTIONS
     @Validate
     public void start() {
+        int UDP_PORT = 8089;
+        String UDP_DATABASE = "udp";
+
+        Map<String,Object> SrvDBParam = new HashMap<>();
+        SrvDBParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+        Map<String,Object> SrvIOPParam = new HashMap<>();
+        SrvIOPParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+        Map<String,Object> SrvbalTheParam = new HashMap<>();
+        SrvbalTheParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+        Map<String,Object> SrvZonesParam = new HashMap<>();
+        SrvZonesParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+
+        DBserice.create("DB",SrvDBParam);
         LOG.info("Temperature control App Started");
-        externalThermometerServiceCreator.create("extThermIOPServ");
-        balconyThermometers.create("balconyThermometers");
-        zonesServices.create("zonesService");
+        externalThermometerServiceCreator.create("extThermIOPServ",SrvIOPParam);
+        balconyThermometers.create("balconyThermometers",SrvbalTheParam);
+        zonesServices.create("zonesService",SrvZonesParam);
     }
 
     @Modified(id="zonesService")
@@ -105,6 +129,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
 
     @Bind(id = "remoteThermometer")
     public void bindservice(RemoteThermometerService srv) {
+
     }
 
     @Unbind(id = "remoteThermometer")
@@ -197,6 +222,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         availabilityRemoteThermos=(remoteThermometerService.getServiceQoS()==100)?(availabilityHeaters-availabilityLocalThermos):0;
 
         pushApp("Heaters: "+Math.round(availabilityHeaters)+"%, BalcTher: "+Math.round(availabilityLocalThermos)+"%, RemTher: "+availabilityRemoteThermos+"%");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityHeaters)),"zone=ALL,app=RoomTemperature,service=Heaters");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityLocalThermos)),"zone=ALL,app=RoomTemperature,service=localThermos");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityRemoteThermos)),"zone=ALL,app=RoomTemperature,service=ExternalThermos");
     }
 
     /**
@@ -237,6 +265,12 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                     setHeatersPower(nearTemp, zone);
                 }
                 break;
+        }
+        if(influxDB.isInfluxRunning()){
+            influxDB.writeSensorsState(0);
+
+        }else{
+            LOG.warn("DB server not found");
         }
 
 
