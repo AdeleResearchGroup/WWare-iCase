@@ -113,6 +113,10 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.wisdom-framework</groupId>
+			<artifactId>wisdom-api</artifactId>
+		</dependency>
     
 	</dependencies>
 

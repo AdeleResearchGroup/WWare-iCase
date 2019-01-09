@@ -222,9 +222,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         availabilityRemoteThermos=(remoteThermometerService.getServiceQoS()==100)?(availabilityHeaters-availabilityLocalThermos):0;
 
         pushApp("Heaters: "+Math.round(availabilityHeaters)+"%, BalcTher: "+Math.round(availabilityLocalThermos)+"%, RemTher: "+availabilityRemoteThermos+"%");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityHeaters)),"zone=ALL,app=RoomTemperature,service=Heaters");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityLocalThermos)),"zone=ALL,app=RoomTemperature,service=localThermos");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityRemoteThermos)),"zone=ALL,app=RoomTemperature,service=ExternalThermos");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityHeaters)),"zone=ALL,name=RoomTemperature,type=app,sub=Heaters");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityLocalThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=localThermos");
+        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityRemoteThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=ExternalThermos");
     }
 
     /**
@@ -266,12 +266,11 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                 }
                 break;
         }
-        if(influxDB.isInfluxRunning()){
-            influxDB.writeSensorsState(0);
 
-        }else{
-            LOG.warn("DB server not found");
-        }
+            influxDB.writeAllSensorsState(0);
+       // influxDB.QueryDB();
+
+
 
 
     }

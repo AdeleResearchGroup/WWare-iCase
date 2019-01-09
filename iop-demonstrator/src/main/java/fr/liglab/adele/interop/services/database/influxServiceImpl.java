@@ -89,13 +89,7 @@ public class influxServiceImpl implements influxService, ServiceLayer{
 
     @Validate
     public void start(){
-        System.out.println("");
-        System.out.println(clock.getElapsedTime());         //0
-        System.out.println(clock.currentTimeMillis());      //1545407113827   >>>> 1545407631504
-        System.out.println(clock.getFactor());              //1
-        System.out.println(clock.getId());                  //simulatedClock
-        System.out.println(clock.getStartDate());           //1545407113827
-        System.out.println("");
+
     }
 
     @Override
@@ -108,7 +102,7 @@ public class influxServiceImpl implements influxService, ServiceLayer{
             return true;
             //QueryResult influxDB.write(new Query("CREATE DATABASE " ));
         }catch(InfluxDBIOException e){
-            System.out.println("error:"+e);
+            LOG.warn("couldn't connect to DB");
             SrvQoS=0;
             return false;
         }
@@ -147,12 +141,41 @@ public class influxServiceImpl implements influxService, ServiceLayer{
     /*public boolean connectionStatus() {
         return super.equals(obj);
     }*/
-    public String QueryDB(String query){
-        Query queryDb = new Query("SELECT * FROM temp", DATABASE_NAME);
+    @Override
+    public String QueryDB(String sensorType, int timeStart, int timeDuration,DBfunction function, int limit){
+        if(isInfluxRunning()){
+
+            Query queryDb = new Query("SELECT * FROM temperature WHERE \"type\"='Thermometer' LIMIT 2", DATABASE_NAME);
+            QueryResult result=influxDB.query(queryDb);
+
+            if(result.getResults().get(0).getSeries().equals("null")){
+
+            }
+
+            System.out.println("");
+            System.out.println(result.getResults());
+            System.out.println(result.getError());
+            //[Result [series=[Series [name=temperature, tags=null, columns=[time, sensor, type, value, zone], values=[[2019-01-04T16:18:20.983Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none], [2019-01-04T16:44:14.635Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none]]]], error=null]]
+            System.out.println(result.getResults().get(0));
+            //Result [series=[Series [name=temperature, tags=null, columns=[time, sensor, type, value, zone], values=[[2019-01-04T16:18:20.983Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none], [2019-01-04T16:44:14.635Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none]]]], error=null]
+            System.out.println(result.getResults().get(0).getSeries());
+            //[Series [name=temperature, tags=null, columns=[time, sensor, type, value, zone], values=[[2019-01-04T16:18:20.983Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none], [2019-01-04T16:44:14.635Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none]]]]
+            System.out.println(result.getResults().get(0).getSeries().get(0).getName());
+            //temperature
+            System.out.println(result.getResults().get(0).getSeries().get(0).getColumns().get(0));
+            //time
+            System.out.println(result.getResults().get(0).getSeries().get(0).getValues().get(0));
+
+            //[2019-01-04T16:18:20.983Z, ThermometerExt-452f2020fc, Thermometer, 291.0, none]
+
+        }
+
+
         //influxDB.query(queryDb,2,)
-        QueryResult result;
-        QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
-        influxDB.setDatabase(DATABASE_NAME);
+
+       // QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
+        //influxDB.setDatabase(DATABASE_NAME);
+
         return "void";
     }
 
@@ -161,125 +184,129 @@ public class influxServiceImpl implements influxService, ServiceLayer{
      * Makes a single write in the influxDB.
      * To write the <strong>temperature</strong> of a <strong>thermometer</strong>
      * that is located in the <strong>kitchen</strong> then
-     * singleDBwrite("temp",30,"host=kitchen,sensor=ThermometerExt-4c8be2e2a1")
+     * singleDBwrite("temp",30,"host=kitchen,name=ThermometerExt-4c8be2e2a1")
      * @param varName name of the measurement
      * @param varValue measurement value
      * @param Parameters aditional parameters of the measure
      */
     public void singleDBwrite(String varName, String varValue, String Parameters){
-        String query="";
-        QueryResult result;
-        QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
-        influxDB.setDatabase(DATABASE_NAME);
-        query=varName+","+Parameters+" value="+varValue;
-        influxDB.write(query);
-    }
-    @Override
-    public void writeSensorsState(int Ttime){
-
-        System.out.println("");
-        System.out.println(clock.getElapsedTime());         //0
-        System.out.println(clock.currentTimeMillis());
-        // cpu, host=serverA, region=fr_south value=0.54 1543571720484841200
-
-        /*name: cpu
-                time                host    region  value
-                ----                ----    ------  -----
-                1543571720484841200 serverA us_west 0.77
-        */
-        String time=(Ttime==0)?"":String.valueOf(Ttime);
-
-        String query="";
-        QueryResult result;
-        QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
-        System.out.println(result1);
-
-        influxDB.setDatabase(DATABASE_NAME);
-        String CurZone="";
-
-        for (ServiceLayer srv:services) {
-            //System.out.println("qos,host="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time);
-            query = "qos,zone="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time;
-            System.out.println(query);
+        if(isInfluxRunning()){
+            String query="";
+            QueryResult result;
+            String timeFormated = String.valueOf(clock.currentTimeMillis())+"000000";
+            QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
+            influxDB.setDatabase(DATABASE_NAME);
+            query=varName+","+Parameters+" value="+varValue+" "+timeFormated;
             influxDB.write(query);
         }
-        for (Cooler cl:locCoolers) {
-            try{
-                query = "powerLvl,zone="+getZoneName(cl)+",type=Cooler"+",sensor="+cl.getSerialNumber()+" value="+cl.getPowerLevel()+" "+time;
+
+    }
+
+    /**
+     * takes information from every service and sensor and saves it into influx
+     * @param Ttime
+     */
+    @Override
+    public void writeAllSensorsState(int Ttime){
+
+        if(isInfluxRunning()){
+            String timeFormatted = String.valueOf(clock.currentTimeMillis())+"000000";
+            String time=(Ttime==0)?timeFormatted:String.valueOf(Ttime);
+
+            String query="";
+            QueryResult result;
+            QueryResult result1 = influxDB.query(new Query("CREATE DATABASE " + DATABASE_NAME, DATABASE_NAME));
+            //System.out.println(result1);
+
+            influxDB.setDatabase(DATABASE_NAME);
+            String CurZone="";
+
+            for (ServiceLayer srv:services) {
+                //System.out.println("qos,host="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time);
+                query = "qos,zone="+srv.getServiceName()+",type=Service,name="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time;
+               // System.out.println(query);
                 influxDB.write(query);
-            }catch (NullPointerException e){
+            }
+            for (Cooler cl:locCoolers) {
+                try{
+                    query = "powerLvl,zone="+getZoneName(cl)+",type=Cooler,name="+cl.getSerialNumber()+" value="+cl.getPowerLevel()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
+
+                }
 
             }
+            for (Heater ht:locHeater) {
+                try{
+                    query = "powerLvl,zone="+getZoneName(ht)+",type=Heater,name="+ht.getSerialNumber()+" value="+ht.getPowerLevel()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
 
-        }
-        for (Heater ht:locHeater) {
-            try{
-                query = "powerLvl,zone="+getZoneName(ht)+",type=Heater"+",sensor="+ht.getSerialNumber()+" value="+ht.getPowerLevel()+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
+                }
+            }
+            for (BinaryLight bl:locBinaryLight) {
+                try{
+                    int val = bl.getPowerStatus()?1:0;
+                    query = "powerStatus,zone="+getZoneName(bl)+",type=BinaryLight,name="+bl.getSerialNumber()+" value="+val+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
+
+                }
+            }
+            for (WindowShutter ws:locWindowShutter) {
+                try{
+                    query = "ShutterLvl,zone="+getZoneName(ws)+",type=WindowShutter,name="+ws.getSerialNumber()+" value="+ws.getShutterLevel()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
+
+                }
+            }
+            for (DimmerLight dl:locDimmerLight) {
+                try{
+                    query = "powerLvl,zone="+getZoneName(dl)+",type=DimmerLight,name="+dl.getSerialNumber()+" value="+dl.getPowerLevel()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
+
+                }
 
             }
-        }
-        for (BinaryLight bl:locBinaryLight) {
-            try{
-                int val = bl.getPowerStatus()?1:0;
-                query = "powerStatus,zone="+getZoneName(bl)+",type=BinaryLight"+",sensor="+bl.getSerialNumber()+" value="+val+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
+            for (PresenceSensor ps:locPresenceSensor) {
+                try{
+                    int presence= ps.getSensedPresence()?1:0;
+                    query = "presence,zone="+getZoneName(ps)+",type=PresenceSensor,name="+ps.getSerialNumber()+" value="+presence+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
 
+                }
             }
-        }
-        for (WindowShutter ws:locWindowShutter) {
-            try{
-                query = "ShutterLvl,zone="+getZoneName(ws)+",type=WindowShutter"+",sensor="+ws.getSerialNumber()+" value="+ws.getShutterLevel()+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
+            for (Thermometer tm:locThermometer) {
+                try{
+                    Double temp= (Double) tm.getTemperature().getValue();
+                    query = "temperature,zone="+getZoneName(tm)+",type=Thermometer,name="+tm.getSerialNumber()+" value="+temp+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
 
+                }
             }
-        }
-        for (DimmerLight dl:locDimmerLight) {
-            try{
-                query = "powerLvl,zone="+getZoneName(dl)+",type=DimmerLight"+",sensor="+dl.getSerialNumber()+" value="+dl.getPowerLevel()+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
-
+            for (ThermometerExt tm:locThermometerExt) {
+                try{
+                    query = "temperature,zone="+getZoneName(tm)+",type=Thermometer,name="+tm.getSerialNumber()+" value="+tm.getTemperature().getValue()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
+                }
             }
+            for (Photometer pt:locPhotometer) {
+                try{
+                    query = "illuminance,zone="+getZoneName(pt)+",type=Photometer,name="+pt.getSerialNumber()+" value="+pt.getIlluminance()+" "+time;
+                    influxDB.write(query);
+                }catch (NullPointerException e){
 
-        }
-        for (PresenceSensor ps:locPresenceSensor) {
-            try{
-                int presence= ps.getSensedPresence()?1:0;
-                query = "presence,zone="+getZoneName(ps)+",type=PresenceSensor"+",sensor="+ps.getSerialNumber()+" value="+presence+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
-
-            }
-        }
-        for (Thermometer tm:locThermometer) {
-            try{
-                Double temp= (Double) tm.getTemperature().getValue();
-                query = "temperature,zone="+getZoneName(tm)+",type=Thermometer"+",sensor="+tm.getSerialNumber()+" value="+temp+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
-
-            }
-        }
-        for (ThermometerExt tm:locThermometerExt) {
-            try{
-                query = "temperature,zone="+getZoneName(tm)+",type=Thermometer"+",sensor="+tm.getSerialNumber()+" value="+tm.getTemperature().getValue()+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
-            }
-        }
-        for (Photometer pt:locPhotometer) {
-            try{
-                query = "illuminance,zone="+getZoneName(pt)+",type=Photometer"+",sensor="+pt.getSerialNumber()+" value="+pt.getIlluminance()+" "+time;
-                influxDB.write(query);
-            }catch (NullPointerException e){
-
+                }
             }
         }
     }
+
+
     String getZoneName(GenericDevice device){
         try{
             return ((ZoneService)device).getZone();

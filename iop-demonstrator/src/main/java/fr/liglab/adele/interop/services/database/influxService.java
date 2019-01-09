@@ -12,6 +12,7 @@ public interface influxService extends ServiceLayer {
 
     boolean isInfluxRunning();
     void singleDBwrite(String varName, String varValue, String Parameters);
-    void writeSensorsState(int time);
+    void writeAllSensorsState(int time);
+    String QueryDB(String sensorType, int timeStart, int timeDuration,DBfunction function, int limit);
 
 }
