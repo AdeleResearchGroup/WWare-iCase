@@ -1,13 +1,5 @@
 package fr.liglab.adele.interop.services.database;
 
-public class SensorType {
-    public String sensor="";
-
-    public String getSensorType(){
-        return sensor;
-    };
-
-    public void setAs(){
-        sensor="";
-    }
+public enum SensorType {
+    App,Service,Cooler,Heater,BinaryLight,WindowShutter,DimmerLight,PresenceSensor,Thermometer,Photometer,AI
 }

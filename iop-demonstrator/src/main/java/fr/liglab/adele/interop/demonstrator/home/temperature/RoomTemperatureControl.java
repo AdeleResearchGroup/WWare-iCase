@@ -7,4 +7,8 @@ import fr.liglab.adele.cream.annotations.State;
 public interface RoomTemperatureControl {
     @State
     String APPLICATION_STATE ="application.state";
+    String[] getAppState();
+    @State
+    String APPLICATION_QOS="application.qos";
+    int getAppQoS();
 }

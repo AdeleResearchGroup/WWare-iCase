@@ -8,6 +8,8 @@ import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.interop.services.database.DBfunction;
+import fr.liglab.adele.interop.services.database.SensorType;
 import fr.liglab.adele.interop.services.database.influxService;
 import fr.liglab.adele.interop.services.database.influxServiceImpl;
 import fr.liglab.adele.interop.services.location.ZonesService;
@@ -20,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.function.Supplier;
 
 
 @ContextEntity(coreServices = {ApplicationLayer.class,RoomTemperatureControl.class})
@@ -33,6 +35,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     //APPLICATION's STATES
     @ContextEntity.State.Field(service = RoomTemperatureControl.class, state = APPLICATION_STATE, value="init")
     private String appState;
+    @ContextEntity.State.Field(service = RoomTemperatureControl.class,state = RoomTemperatureControl.APPLICATION_QOS, value="0",directAccess = true)
+    private int appQoS;
 
 
     //IMPLEMENTATION's FUNCTIONS
@@ -45,8 +49,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     @ContextRequirement(spec = {ZoneService.class})
     private List<HeatersService> heaterSrvices;
 
-    @Requires(id = "database", specification = influxService.class, optional = true)
-    private influxService influxDB;
+
 
     @Requires(id = "remoteThermometer", specification = RemoteThermometerService.class, optional = true)
     private RemoteThermometerService remoteThermometerService;
@@ -65,8 +68,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO)
     Creator.Relation<ZoneService, Zone> attacher;
 
-    private @Creator.Field
-    Creator.Entity<influxServiceImpl> DBserice;
+
     private @Creator.Field
     Creator.Entity<RemoteThermometerServiceImpl> externalThermometerServiceCreator;
     private @Creator.Field
@@ -75,6 +77,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     Creator.Entity<BalconyThermometerServiceImpl> balconyThermometers;
     private @Creator.Field
     Creator.Entity<ZonesServiceImpl> zonesServices;
+    private @Creator.Field
+    Creator.Entity<AIRoomTemperatureServiceImpl> aiTemperatureService;
 
 
    /* private String dbName = "aTimeSeries";*/
@@ -87,20 +91,24 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         int UDP_PORT = 8089;
         String UDP_DATABASE = "udp";
 
-        Map<String,Object> SrvDBParam = new HashMap<>();
-        SrvDBParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+
         Map<String,Object> SrvIOPParam = new HashMap<>();
         SrvIOPParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
         Map<String,Object> SrvbalTheParam = new HashMap<>();
         SrvbalTheParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
         Map<String,Object> SrvZonesParam = new HashMap<>();
         SrvZonesParam.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
+        Map<String,Object> SrvAItemp = new HashMap<>();
+        SrvAItemp.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"DB");
 
-        DBserice.create("DB",SrvDBParam);
+
         LOG.info("Temperature control App Started");
         externalThermometerServiceCreator.create("extThermIOPServ",SrvIOPParam);
         balconyThermometers.create("balconyThermometers",SrvbalTheParam);
         zonesServices.create("zonesService",SrvZonesParam);
+        aiTemperatureService.create("AItemp",SrvAItemp);
+
+
     }
 
     @Modified(id="zonesService")
@@ -195,6 +203,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     public String pushApp(String appState){return appState;}
 
 
+
+
     //FUNCTIONS
 
     public void setState(){
@@ -222,9 +232,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         availabilityRemoteThermos=(remoteThermometerService.getServiceQoS()==100)?(availabilityHeaters-availabilityLocalThermos):0;
 
         pushApp("Heaters: "+Math.round(availabilityHeaters)+"%, BalcTher: "+Math.round(availabilityLocalThermos)+"%, RemTher: "+availabilityRemoteThermos+"%");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityHeaters)),"zone=ALL,name=RoomTemperature,type=app,sub=Heaters");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityLocalThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=localThermos");
-        influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityRemoteThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=ExternalThermos");
+        //influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityHeaters)),"zone=ALL,name=RoomTemperature,type=app,sub=Heaters");
+        //influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityLocalThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=localThermos");
+        //influxDB.singleDBwrite("coverage",Long.toString(Math.round(availabilityRemoteThermos)),"zone=ALL,name=RoomTemperature,type=app,sub=ExternalThermos");
     }
 
     /**
@@ -267,7 +277,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                 break;
         }
 
-            influxDB.writeAllSensorsState(0);
+
+
        // influxDB.QueryDB();
 
 
@@ -371,5 +382,20 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         return AMstatusLevel;
     }
 
+
+    @Override
+    public String[] getAppState() {
+        String[] states=appState.split("\\,");
+        if(states.length==0){
+            return new String[0];
+        }else{
+            return states;
+        }
+    }
+
+    @Override
+    public int getAppQoS() {
+        return appQoS;
+    }
 
 }

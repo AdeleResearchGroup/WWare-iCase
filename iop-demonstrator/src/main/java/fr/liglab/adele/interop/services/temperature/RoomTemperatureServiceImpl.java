@@ -32,7 +32,7 @@ public class RoomTemperatureServiceImpl implements RoomTemperatureService, Servi
     public String name;
 
     @ContextEntity.State.Field(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
-    private int AppQoS;
+    private int SrvQoS;
 
     private static final Integer MIN_QOS = 50;
     private MomentOfTheDay.PartOfTheDay scheduledPeriod = null;
@@ -105,7 +105,7 @@ public class RoomTemperatureServiceImpl implements RoomTemperatureService, Servi
 
     @Override
     public int getServiceQoS() {
-        return AppQoS;
+        return SrvQoS;
     }
 
     @Override
