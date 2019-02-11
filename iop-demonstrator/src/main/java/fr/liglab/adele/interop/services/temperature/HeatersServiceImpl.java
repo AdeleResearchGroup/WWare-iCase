@@ -63,8 +63,8 @@ public class HeatersServiceImpl implements HeatersService, ServiceLayer {
     public void setPowerLevel(double powerLevel) {
 
         for (Heater Htr : heaters) {
-            if ((powerLevel / heaters.size()) <= 1d) {
-                Htr.setPowerLevel(powerLevel / heaters.size());
+            if ((powerLevel) <= 1d) {
+                Htr.setPowerLevel(powerLevel);
             } else {
                 LOG.warn("SRV(heat) Maximum Power surpassed, setting at 100%");
                 Htr.setPowerLevel(1d);

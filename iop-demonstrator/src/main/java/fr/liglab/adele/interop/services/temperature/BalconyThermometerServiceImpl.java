@@ -151,6 +151,11 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         return zones.getZoneList().size();
     }
 
+    /**
+     * Get the current temperature of the specified external thermometer
+     * @param thermoRef name of the external thermometer
+     * @return Quantity with the temperature from the thermometer
+     */
     @Override
     public Quantity<Temperature> getCurrentTemperature(String thermoRef) {
         Quantity<Temperature> temp = Quantities.getQuantity(-2.0, Units.KELVIN);
@@ -170,7 +175,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
      * returns none if no close thermometers are found
      */
     @Override
-    public String getExternalZoneSensor(String zne) {
+    public String getClosestExternalThermometerToZone(String zne) {
 
         LOG.info("finding closest thermometer to: "+zne);
         double ShortestDistance = 99999;

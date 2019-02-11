@@ -6,26 +6,15 @@ import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Temperature;
-import java.util.Map;
 
 @ContextService
-public interface BalconyThermometerService extends ServiceLayer {
+public interface RoomThermometerService extends ServiceLayer {
     @State
     String SERVICE_STATUS = "service.status";
     @State
     String SERVICE_CHANGE = "service.change";
 
-    Boolean getServiceStatus();
+    String getServiceStatus();
 
-    int getNumberOfZones();
-
-    String getClosestExternalThermometerToZone(String zone);
-
-    String getAsignedThermometer(String zone);
-
-    void removeAsignedThermometer(String zone);
-
-    Map<String, String> getAsignedThermometers();
-
-    Quantity<Temperature> getCurrentTemperature(String thermometer);
+    Double getTemperature();
 }

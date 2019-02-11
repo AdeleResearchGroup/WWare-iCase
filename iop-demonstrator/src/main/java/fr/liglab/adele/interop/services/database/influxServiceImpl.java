@@ -202,7 +202,7 @@ System.out.println(queryDb);
      */
     @Override
     public void writeAllSensorsState(long Ttime){
-
+System.err.printf("%B%n",isInfluxRunning());
         if(isInfluxRunning()){
             String timeFormatted = String.valueOf(clock.currentTimeMillis())+"000000";
             String time=(Ttime==0)?timeFormatted:String.valueOf(Ttime)+"000000";
@@ -213,39 +213,7 @@ System.out.println(queryDb);
             influxDB.setDatabase(DATABASE_NAME);
             String CurZone="";
 
-            //Apps
-            for(ApplicationLayer app:apps){
-                String [] appClass = app.toString().split("\\.");
-                String appName = appClass[appClass.length-1].split("@")[0];
-                if(appName.equals("RoomTemperatureControlApp")){
-                    String[] rawAppState = ((RoomTemperatureControl)app).getAppState();
-                    double heaters =0;
-                    double balconyThermos = 0;
-                    double remoteThermos = 0;
-                    double aiThermo = 0;
-                    if(rawAppState.length>1){
-                        heaters =Double.parseDouble(rawAppState[0].split(":")[1].split("%")[0]);
-                        balconyThermos = Double.parseDouble(rawAppState[1].split(":")[1].split("%")[0]);
-                        remoteThermos = Double.parseDouble(rawAppState[2].split(":")[1].split("%")[0]);
-                        query = "coverage,zone=ALL,type=app,sub=Heaters value="+Double.toString(heaters)+" "+time;
-                        influxDB.write(query);
-                        query = "coverage,zone=ALL,type=app,sub=localThermos value="+Double.toString(balconyThermos)+" "+time;
-                        influxDB.write(query);
-                        query = "coverage,zone=ALL,type=app,sub=ExternalThermos value="+Double.toString(remoteThermos)+" "+time;
-                        influxDB.write(query);
 
-                    }
-
-                }
-
-
-            }
-
-            //services
-            for (ServiceLayer srv:services) {
-                query = "qos,zone="+srv.getServiceName()+",type=Service,name="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time;
-                influxDB.write(query);
-            }
             for (Cooler cl:locCoolers) {
                 try{
                     query = "powerLvl,zone="+getZoneName(cl)+",type=Cooler,name="+cl.getSerialNumber()+" value="+cl.getPowerLevel()+" "+time;
@@ -321,6 +289,40 @@ System.out.println(queryDb);
                 }catch (NullPointerException e){
 
                 }
+            }
+
+            //Apps
+            for(ApplicationLayer app:apps){
+                String [] appClass = app.toString().split("\\.");
+                String appName = appClass[appClass.length-1].split("@")[0];
+                if(appName.equals("RoomTemperatureControlApp")){
+                    String[] rawAppState = ((RoomTemperatureControl)app).getAppState();
+                    double heaters =0;
+                    double balconyThermos = 0;
+                    double remoteThermos = 0;
+                    double aiThermo = 0;
+                    if(rawAppState.length>1){
+                        heaters =Double.parseDouble(rawAppState[0].split(":")[1].split("%")[0]);
+                        balconyThermos = Double.parseDouble(rawAppState[1].split(":")[1].split("%")[0]);
+                        remoteThermos = Double.parseDouble(rawAppState[2].split(":")[1].split("%")[0]);
+                        query = "coverage,zone=ALL,type=app,sub=Heaters value="+Double.toString(heaters)+" "+time;
+                        influxDB.write(query);
+                        query = "coverage,zone=ALL,type=app,sub=localThermos value="+Double.toString(balconyThermos)+" "+time;
+                        influxDB.write(query);
+                        query = "coverage,zone=ALL,type=app,sub=ExternalThermos value="+Double.toString(remoteThermos)+" "+time;
+                        influxDB.write(query);
+
+                    }
+
+                }
+
+
+            }
+
+            //services
+            for (ServiceLayer srv:services) {
+                query = "qos,zone="+srv.getServiceName()+",type=Service,name="+srv.getServiceName()+" value="+srv.getServiceQoS()+" "+time;
+                influxDB.write(query);
             }
         }
     }
