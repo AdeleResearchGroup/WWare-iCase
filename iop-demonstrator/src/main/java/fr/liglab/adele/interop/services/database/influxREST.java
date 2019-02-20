@@ -13,7 +13,7 @@ import org.wisdom.api.http.Result;
 @Controller
 @Component(immediate = true)
 @Instantiate
-public class influxREST extends DefaultController {
+public class InfluxREST extends DefaultController {
     //@Requires
 
 

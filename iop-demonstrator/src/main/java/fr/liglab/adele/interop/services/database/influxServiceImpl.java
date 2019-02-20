@@ -1,7 +1,6 @@
 package fr.liglab.adele.interop.services.database;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
-import fr.liglab.adele.cream.annotations.provider.Creator;
 import fr.liglab.adele.icasa.clockservice.Clock;
 import fr.liglab.adele.icasa.device.GenericDevice;
 import fr.liglab.adele.icasa.device.doorWindow.WindowShutter;
@@ -15,7 +14,7 @@ import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
 import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
-import fr.liglab.adele.icasa.layering.services.location.ZoneService;
+import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControl;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
@@ -34,11 +33,11 @@ import java.util.List;
 
 import static java.lang.String.valueOf;
 
-@ContextEntity(coreServices = {influxService.class, ServiceLayer.class})
-public class influxServiceImpl implements influxService, ServiceLayer{
+@ContextEntity(coreServices = {InfluxService.class, ServiceLayer.class})
+public class InfluxServiceImpl implements InfluxService, ServiceLayer{
 
     //SERVICE's STATES
-    @ContextEntity.State.Field(service = influxService.class, state = SERVICE_STATUS)
+    @ContextEntity.State.Field(service = InfluxService.class, state = SERVICE_STATUS)
     private String status;
 
 
@@ -124,11 +123,55 @@ public class influxServiceImpl implements influxService, ServiceLayer{
         return name;
     }
 
-    public List<QueryResult.Result>  aiQuery(SensorType sensorType, String timeStart,String lowerLimit, String upperLimit,DBfunction function, int limit){
-        return generalQuery(sensorType, timeStart,lowerLimit, upperLimit,function, limit);
+
+
+    /**
+     *
+     * @param timeStart String representing the time such as "2019-01-28"
+     * @param lowerLimit 370d the query will be made with the #timeStart - lowerLimit
+     * @param upperLimit 365d the query will finish with #timeStart - upperLimit
+     * @param function DBfunction that states what function will be applied to the query: mean, sum, etc.
+     * @param limit although results are calculated with all the time period, the values returned can be limited
+     * @return query result from DB
+     */
+    @Override
+    public List<QueryResult.Result>  aiQuery(String timeStart,String lowerLimit, String upperLimit,DBfunction function, int limit){
+        return generalQuery(SensorType.AI, timeStart,lowerLimit, upperLimit,function, limit);
     }
+
+    /**
+     *
+     * @param sensorType passed as an enum SensorType for the desired measurement i.e SensorType.BinaryLight
+     * @param timeStart variable should be in epoch format refering to the time
+     * @param timeDuration refers to the duration of the returned measurement 10s, 1m, 3h, 1d, 1w
+     * @param function DBfunction that states what function will be applied to the query: mean, sum, etc.
+     * @param limit although results are calculated with all the time period, the values returned can be limited
+     * @return
+     */
+    @Override
     public List<QueryResult.Result>  QueryDB(SensorType sensorType, String timeStart, String timeDuration,DBfunction function, int limit){
         return generalQuery(sensorType, timeStart, "NA",timeDuration, function, limit);
+    }
+
+    /**
+     *
+     * @param Query manual query that should include a complete query such as
+     *              SELECT last("value") FROM temperature WHERE value >278.4 and value <278.6
+     * @param DataBaseName name of the database to query
+     * @return
+     */
+    @Override
+    public List<QueryResult.Result> manualQuery(String Query, String DataBaseName){
+        try{
+            Query queryDb;
+            influxDB.setDatabase(DataBaseName);
+            queryDb = new Query(Query, DataBaseName);
+            QueryResult result=influxDB.query(queryDb);
+            return result.getResults();
+        }catch (NullPointerException e){
+            LOG.info("empty query",e);
+            return null;
+        }
     }
     @Override
     public void eraseDB(){
@@ -144,7 +187,7 @@ public class influxServiceImpl implements influxService, ServiceLayer{
      * @param lowerLimit
      * @param upperLimitOrDuration  refers to the duration of the returned measurement 10s, 1m, 3h, 1d, 1w
      * @param function  DBfunction that states what function will be applied to the query: mean, sum, etc.
-     * @param limit   although results are calculated xith all the time period, the values returned can be limited
+     * @param limit   although results are calculated with all the time period, the values returned can be limited
      * @return
      */
     public List<QueryResult.Result> generalQuery(SensorType sensorType, String timeStart,String lowerLimit, String upperLimitOrDuration,DBfunction function, int limit){
@@ -177,7 +220,6 @@ public class influxServiceImpl implements influxService, ServiceLayer{
         }
 
         try{
-System.out.println(queryDb);
 
             QueryResult result=influxDB.query(queryDb);
             //if there's no result??
@@ -202,7 +244,7 @@ System.out.println(queryDb);
      */
     @Override
     public void writeAllSensorsState(long Ttime){
-System.err.printf("%B%n",isInfluxRunning());
+//System.err.printf("%B%n",isInfluxRunning());
         if(isInfluxRunning()){
             String timeFormatted = String.valueOf(clock.currentTimeMillis())+"000000";
             String time=(Ttime==0)?timeFormatted:String.valueOf(Ttime)+"000000";
@@ -269,6 +311,7 @@ System.err.printf("%B%n",isInfluxRunning());
             for (Thermometer tm:locThermometer) {
                 try{
                     Double temp= (Double) tm.getTemperature().getValue();
+
                     query = "temperature,zone="+getZoneName(tm)+",type=Thermometer,name="+tm.getSerialNumber()+" value="+temp+" "+time;
                     influxDB.write(query);
                 }catch (NullPointerException e){
@@ -277,7 +320,7 @@ System.err.printf("%B%n",isInfluxRunning());
             }
             for (ThermometerExt tm:locThermometerExt) {
                 try{
-                    query = "temperature,zone="+getZoneName(tm)+",type=Thermometer,name="+tm.getSerialNumber()+" value="+tm.getTemperature().getValue()+" "+time;
+                    query = "temperature,zone="+getZoneName(tm)+",type=ThermometerExt,name="+tm.getSerialNumber()+" value="+tm.getTemperature().getValue()+" "+time;
                     influxDB.write(query);
                 }catch (NullPointerException e){
                 }
@@ -346,6 +389,8 @@ System.err.printf("%B%n",isInfluxRunning());
                 break;
             case "Thermometer": toReturn="temperature";
                 break;
+            case "ThermometerExt": toReturn="temperature";
+                break;
             case "Photometer": toReturn="illuminance";
                 break;
             case "App": toReturn="/.*/";
@@ -366,8 +411,9 @@ System.err.printf("%B%n",isInfluxRunning());
 
     String getZoneName(GenericDevice device){
         try{
-            return ((ZoneService)device).getZone();
+            return ((LocatedObject)device).getZone();
         }catch(ClassCastException e){
+            System.err.println(e);
             return "none";
         }
     }
