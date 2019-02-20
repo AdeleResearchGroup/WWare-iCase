@@ -3,6 +3,7 @@ package fr.liglab.adele.interop.demonstrator.home.temperature;
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.provider.Creator;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
+import fr.liglab.adele.icasa.clockservice.Clock;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
@@ -10,7 +11,7 @@ import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
 import fr.liglab.adele.interop.services.dataManip.pidService;
 import fr.liglab.adele.interop.services.dataManip.pidServiceImpl;
-import fr.liglab.adele.interop.services.database.influxService;
+import fr.liglab.adele.interop.services.database.InfluxService;
 import fr.liglab.adele.interop.services.location.ZonesService;
 import fr.liglab.adele.interop.services.location.ZonesServiceImpl;
 import fr.liglab.adele.interop.services.temperature.*;
@@ -18,6 +19,7 @@ import org.apache.felix.ipojo.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     }
 
     //REQUIREMENTS
+    @Requires
+    Clock clock;
+
     @Requires(id = "heaterService", specification = HeatersService.class, optional = true)
     @ContextRequirement(spec = {ZoneService.class})
     private List<HeatersService> heaterSrvices;
@@ -54,6 +59,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     @Requires(id = "pidController", specification = pidService.class, optional = true)
     private pidService pidSrv;
 
+    @Requires(id="mlController",specification = LearnedHeaterBehavior.class,optional = true)
+    private LearnedHeaterBehavior mlHeater;
+
 
     @Requires(id = "remoteThermometer", specification = RemoteThermometerService.class, optional = true)
     private RemoteThermometerService remoteThermometerService;
@@ -64,11 +72,13 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     @Requires(id = "zonesService", specification = ZonesService.class, optional = true)
     private ZonesService zonesService;
 
-    @Requires(id = "dbService", specification = influxService.class, optional = true)
-    private influxService DBService;
+    @Requires(id = "dbService", specification = InfluxService.class, optional = true)
+    private InfluxService DBService;
 
     // @Requires(id="zones",specification = ZonesService.class,optional = true)
     // private ZonesService zonesService;
+
+    private long currGobalTime=0;
 
 
     //CREATORS
@@ -90,7 +100,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     Creator.Entity<AIRoomTemperatureServiceImpl> aiTemperatureService;
     private @Creator.Field
     Creator.Entity<pidServiceImpl> pidService;
-
+    private @Creator.Field
+    Creator.Entity<LearnedHeaterBehaviorImpl> mlService;
 
     /* private String dbName = "aTimeSeries";*/
 
@@ -111,7 +122,9 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         Map<String, Object> SrvAItemp = new HashMap<>();
         SrvAItemp.put(ContextEntity.State.id(ServiceLayer.class, ServiceLayer.NAME), "AItemp");
         Map<String, Object> SrvPID = new HashMap<>();
-        SrvPID.put(ContextEntity.State.id(ServiceLayer.class, ServiceLayer.NAME), "pid");
+        SrvPID.put(ContextEntity.State.id(ServiceLayer.class, ServiceLayer.NAME), "pidCtrl");
+        Map<String, Object> SrvML = new HashMap<>();
+        SrvML.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME),"MLCtrl");
 
 
         LOG.info("Temperature control App Started");
@@ -119,7 +132,8 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         balconyThermometers.create("balconyThermometers", SrvbalTheParam);
         zonesServices.create("zonesService", SrvZonesParam);
         aiTemperatureService.create("AItemp", SrvAItemp);
-        pidService.create("pid",SrvPID);
+        pidService.create("pidCtrl",SrvPID);
+        mlService.create("MLCtrl",SrvML);
 
 
     }
@@ -174,7 +188,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
 
         if (srv.isThermometerPresent() > 0) {
             for (HeatersService ht : heaterSrvices) {
-                setTemperature(((ZoneService) ht).getZone());
+                setTemperature(((ZoneService) ht).getZone(),1,clock.currentTimeMillis());
 
             }
         }
@@ -190,7 +204,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     }
     @Modified(id="localThermometerService")
     public void modifyThermo(RoomThermometerService rt ){
-        setTemperature(((ZoneService) rt).getZone());
+        setTemperature(((ZoneService) rt).getZone(),2,clock.currentTimeMillis());
 
     }
 
@@ -211,7 +225,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     public void modifiedBalconyTher(BalconyThermometerService srv) {
         for (HeatersService htr : heaterSrvices) {
             String zone = ((ZoneService) htr).getZone();
-            setTemperature(zone);
+            setTemperature(zone,3,clock.currentTimeMillis());
         }
     }
 
@@ -220,7 +234,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     public void bindedHeaters(HeatersService srv) {
 
         String zone = ((ZoneService) srv).getZone();
-        setTemperature(zone);
+        setTemperature(zone,4,clock.currentTimeMillis());
     }
 
     @Unbind(id = "heaterService")
@@ -234,7 +248,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     public void modifiedheaters(HeatersService srv) {
 
         String tmp = (srv.getServiceName().split("\\."))[0];
-        setTemperature(tmp);
+        setTemperature(tmp,5,clock.currentTimeMillis());
     }
 
     @ContextEntity.State.Push(service = RoomTemperatureControl.class, state = RoomTemperatureControl.APPLICATION_STATE)
@@ -272,77 +286,126 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         pushApp("Heaters: " + Math.round(availabilityHeaters) + "%, BalcTher: " + Math.round(availabilityLocalThermos) + "%, RemTher: " + availabilityRemoteThermos + "%");
     }
 
+    private int lastOriginer =0;
+    private int lastScenario=0;
+    private long lastTime=0;
+    private int interaction=-1;
     /**
      * Sets the power level of the heaters in a zone, depending on the zoneAM and the appAm level
      *
      * @param zone Zone for which the temperature will be attempted to be set
      */
-    public void setTemperature(String zone) {
-        setState();
-        //appState= String.valueOf(appAM()+zoneAM(zone));
-        LOG.info("AM (global-zone:" + zone + "): (" + appAM() + "-" + zoneAM(zone) + ")");
-        //determining the scenario to run...
-        int scenario = zoneAM(zone);
+    public void setTemperature(String zone, int Originer,long time) {
+        interaction+=1;
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(time);
+        int h=date.get(Calendar.HOUR_OF_DAY);
+        int m=date.get(Calendar.MINUTE);
 
-        if(scenario >= 0 && scenario < 17){
-            //SCENARIO 5: no enough resources to set temperature
-        }else if(scenario == 17){
-            //SCENARIO 4:
-        }else if(scenario > 17 && scenario < 20){
-            //SCENARIO 3: no local
-        }else if(scenario >= 20 && scenario < 24){
-            //SCENARIO 2: local thermo unavailable but balcony  Thermo available
-        }else if(scenario >= 24 && scenario < 32){
-            //SCENARIO 1: local thermometer available >>> PID controller
-            double ZoneTemperature = (double)internalThermometerServiceCreator.getInstance(zone + ".thermometers").getTemperature();
-            double Tempobjective = 283.15;//aka 10°C
-            double output = pidService.getInstance("pid").getControlVariableValue(0.5, 0.1, 0.6, Tempobjective, ZoneTemperature);
-            System.err.printf("Target\tActual\tOutput\tError\n");
-            System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f\n", Tempobjective, ZoneTemperature, output, (Tempobjective-ZoneTemperature));
-            setHeatersPower(output,zone);
+        date.setTimeInMillis(lastTime);
+        int hh=date.get(Calendar.HOUR_OF_DAY);
+        int mm=date.get(Calendar.MINUTE);
 
-        }else{
-            //impossible scenario
-        }
+       /* System.out.println("");
+        System.out.println("time\tpevTime");
+        System.out.println(h+":"+m+"\t"+hh+":"+mm);
+        System.out.printf("delta:%B\n",(time-lastTime>2000000));
+        System.out.println(time-lastTime);*/
 
-        switch (8) {
-            case 1:
-            case 2:
-            case 4:
-            case 6:
-                if (appAM() == 5) {
-                    LOG.warn("Local thermometers not found for zone:" + zone + ", asking Base...");
-                    remoteThermometerService.setConnection(new String[]{Thermometer.class.getCanonicalName()});
-                } else {
-                    LOG.warn("can't set Temperature, insufficient resources", zone);
-                }
+        if(time-lastTime>2000000){
+            lastTime=time;
+            setState();
 
-                break;
-            case 3:
-                //iop present
-                double farTemp = (Double) remoteThermometerService.getCurrentTemperature().getValue();
-                setHeatersPower(farTemp, zone);
-                break;
-            case 5:
-                //balcony present
-            case 7:
-                //balcony+iop present
+            //appState= String.valueOf(appAM()+zoneAM(zone));
+            // LOG.info("AM (global-zone:" + zone + "): (" + appAM() + "-" + zoneAM(zone) + ")");
+            //determining the scenario to run...
+            int scenario = zoneAM(zone);
+            System.out.printf("SCR\tlOrg\ttime\tltime\tSCN\titeration\n");
+            System.out.printf("%1d\t%1d\t%13d\t%13d\t%d\t%4d\n",Originer, lastOriginer,time,lastTime,scenario,interaction);
+
+            if(scenario >= 0 && scenario < 17){
+                //SCENARIO 5: no enough resources to set temperature
+            }else if(scenario == 17){
+                //SCENARIO 4:
+            }else if(scenario > 17 && scenario < 20){
+                //SCENARIO 3: no local
+            }else if(scenario >= 20 && scenario < 24){
+                //SCENARIO 2: local thermo unavailable but balcony  Thermo available  >>> impossible to PID
                 String nearestThermo = balconyThermometerService.getClosestExternalThermometerToZone(zone);
                 LOG.info("geting temp from local thermometer service: " + nearestThermo, balconyThermometerService);
                 double nearTemp = (double) balconyThermometerService.getCurrentTemperature(nearestThermo).getValue();
 
+                Double powerPercent = mlService.getInstance("MLCtrl").getHeaterPorcentage(nearTemp,zone);
 
+                //get min and max temperature for the zone??
+                //need to get the same outside temperature date and then with that date get the heater level
 
 
                 if (nearTemp != -2.0d) {
-                    setHeatersPower(nearTemp, zone);
+                    System.out.printf("%s\t%s",powerPercent, zone);
+                    if(powerPercent != null){
+                        setHeatersPower(powerPercent, zone);
+                    }
                 }
-                break;
-            case 8:
-                //failsafe
-                break;
+
+            }else if(scenario >= 24 && scenario < 32){
+                //SCENARIO 1: local thermometer available >>> PID controller
+                double ZoneTemperature = (double)internalThermometerServiceCreator.getInstance(zone + ".thermometers").getTemperature();
+                double Tempobjective = 283.15;//aka 10°C
+                double output = pidService.getInstance("pidCtrl").getControlVariableValue(0.5, 0.1, 0.6, Tempobjective, ZoneTemperature);
+                System.err.printf("Target\tActual\tOutput\tError\n");
+                System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f\n", Tempobjective, ZoneTemperature, output, (Tempobjective-ZoneTemperature));
+                setHeatersPower(output,zone);
+
+            }else{
+                //impossible scenario
+            }
+
+            switch (8) {
+                case 1:
+                case 2:
+                case 4:
+                case 6:
+                    if (appAM() == 5) {
+                        LOG.warn("Local thermometers not found for zone:" + zone + ", asking Base...");
+                        remoteThermometerService.setConnection(new String[]{Thermometer.class.getCanonicalName()});
+                    } else {
+                        LOG.warn("can't set Temperature, insufficient resources", zone);
+                    }
+
+                    break;
+                case 3:
+                    //iop present
+                    double farTemp = (Double) remoteThermometerService.getCurrentTemperature().getValue();
+                    setHeatersPower(farTemp, zone);
+                    break;
+                case 5:
+                    //balcony present
+                case 7:
+                    //balcony+iop present
+                    String nearestThermo = balconyThermometerService.getClosestExternalThermometerToZone(zone);
+                    LOG.info("geting temp from local thermometer service: " + nearestThermo, balconyThermometerService);
+                    double nearTemp = (double) balconyThermometerService.getCurrentTemperature(nearestThermo).getValue();
+
+
+
+
+                    if (nearTemp != -2.0d) {
+                        setHeatersPower(nearTemp, zone);
+                    }
+                    break;
+                case 8:
+                    //failsafe
+                    break;
+            }
+            lastScenario = scenario;
+        }else {
+            lastTime=time;
         }
 
+
+
+        lastOriginer = Originer;
 
         // influxDB.QueryDB();
 
@@ -356,7 +419,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
      * @param zone                 zone for which the power will be set
      */
     private void setHeatersPower(double powerLevel, String zone) {
-        LOG.info("setting temperatue on " + zone + " from a reference of " + powerLevel + "%");
+      //  LOG.info("setting temperatue on " + zone + " from a reference of " + powerLevel + "%");
         roomHeaterServices.getInstance(zone + ".heaters").setPowerLevel(powerLevel);
 
 
@@ -458,6 +521,10 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         return appQoS;
     }
 
+    /**
+     * checks availability of heater service
+     * @return 0 if unavailable, 10000 if available
+     */
     private byte isHeaterServiceInZone(String zone){
         byte ans = 0b0;
         for (HeatersService htsr : heaterSrvices) {
@@ -465,6 +532,10 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         }
         return ans;
     }
+    /**
+     * checks availability of local thermometer service
+     * @return 0 if unavailable, 1000 if available
+     */
     private byte isThermoServiceInZone(String zone){
         byte ans = 0b0;
         for (RoomThermometerService thsrv:roomThermo) {
@@ -472,6 +543,10 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         }
         return ans;
     }
+    /**
+     * checks availability of local balcony thermometer service
+     * @return 0 if unavailable, 100 if available
+     */
     private byte isbalconyThermoServiceInZone(String zone){
         byte ans = 0b0;
         int balconyState = (balconyThermometerService.getAsignedThermometer(zone) != null) ? 1 : 0;
@@ -485,9 +560,18 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         }
         return ans;
     }
+    /**
+     * checks availability of remote Thermometer service
+     * @return 0 if unavailable, 10 if available
+     */
     private byte isRemoteServiceAvailable(){
         return (remoteThermometerService.getServiceQoS() == 100) ? (byte) 0b10 : (byte) 0b0;
     }
+
+    /**
+     * checks availability of DB service
+     * @return 0 if unavailable, 1 if available
+     */
     private byte isDBServiceAvailable(){
         return (DBService.getServiceQoS() == 100) ? (byte) 0b1 : (byte) 0b0;
     }
