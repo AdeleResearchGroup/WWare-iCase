@@ -136,7 +136,12 @@ public class InfluxServiceImpl implements InfluxService, ServiceLayer{
      */
     @Override
     public List<QueryResult.Result>  aiQuery(String timeStart,String lowerLimit, String upperLimit,DBfunction function, int limit){
-        return generalQuery(SensorType.AI, timeStart,lowerLimit, upperLimit,function, limit);
+        if(isInfluxRunning()){
+            return generalQuery(SensorType.AI, timeStart,lowerLimit, upperLimit,function, limit);
+        }else {
+            return null;
+        }
+
     }
 
     /**
@@ -150,7 +155,12 @@ public class InfluxServiceImpl implements InfluxService, ServiceLayer{
      */
     @Override
     public List<QueryResult.Result>  QueryDB(SensorType sensorType, String timeStart, String timeDuration,DBfunction function, int limit){
-        return generalQuery(sensorType, timeStart, "NA",timeDuration, function, limit);
+        if(isInfluxRunning()){
+            return generalQuery(sensorType, timeStart, "NA",timeDuration, function, limit);
+        }else {
+            return null;
+        }
+
     }
 
     /**
@@ -162,21 +172,26 @@ public class InfluxServiceImpl implements InfluxService, ServiceLayer{
      */
     @Override
     public List<QueryResult.Result> manualQuery(String Query, String DataBaseName){
-        try{
-            Query queryDb;
-            influxDB.setDatabase(DataBaseName);
-            queryDb = new Query(Query, DataBaseName);
-            QueryResult result=influxDB.query(queryDb);
-            return result.getResults();
-        }catch (NullPointerException e){
-            LOG.info("empty query",e);
-            return null;
+        if(isInfluxRunning()){
+            try{
+                Query queryDb;
+                influxDB.setDatabase(DataBaseName);
+                queryDb = new Query(Query, DataBaseName);
+                QueryResult result=influxDB.query(queryDb);
+                return result.getResults();
+            }catch (NullPointerException e){
+                LOG.info("empty query",e);
+                return null;
+            }
         }
+        return null;
     }
     @Override
     public void eraseDB(){
-        Query queryDb = new Query("DROP database "+DATABASE_NAME,DATABASE_NAME);
-        influxDB.query(queryDb);
+        if(isInfluxRunning()){
+            Query queryDb = new Query("DROP database "+DATABASE_NAME,DATABASE_NAME);
+            influxDB.query(queryDb);
+        }
     }
     //@Override
 
@@ -191,49 +206,48 @@ public class InfluxServiceImpl implements InfluxService, ServiceLayer{
      * @return
      */
     public List<QueryResult.Result> generalQuery(SensorType sensorType, String timeStart,String lowerLimit, String upperLimitOrDuration,DBfunction function, int limit){
+        if(isInfluxRunning()){
+            String meassurement = getMeassurement(sensorType.toString());
+            String formatedTimeStart=timeStart+"000000";
+            String tDuration = assertDuration(upperLimitOrDuration);
+            String a="";
 
-        String meassurement = getMeassurement(sensorType.toString());
-        String formatedTimeStart=timeStart+"000000";
-        String tDuration = assertDuration(upperLimitOrDuration);
-        String a="";
+            String firstQueryPart;
 
-        String firstQueryPart;
-
-        if(function == DBfunction.none){
-            firstQueryPart="SELECT * FROM ";
-        }else{
-            firstQueryPart="SELECT "+function.toString()+"(*) FROM  ";
-        }
-
-
-        Query queryDb;
-
-        if(sensorType == SensorType.AI){
-            influxDB.setDatabase("mLearning");
-
-            a=firstQueryPart+meassurement+" WHERE time > '"+timeStart+"' - "+lowerLimit+" AND time < '"+timeStart+"' - + "+upperLimitOrDuration+" LIMIT "+String.valueOf(limit);
-            queryDb = new Query(a, "mLearning");
-
-        }else{
-            a=firstQueryPart+meassurement+" WHERE \"type\"='"+sensorType.toString()+"' AND time > "+formatedTimeStart+" AND time <"+formatedTimeStart+"+"+tDuration+" LIMIT "+String.valueOf(limit);
-            queryDb = new Query(a, DATABASE_NAME);
-        }
-
-        try{
-
-            QueryResult result=influxDB.query(queryDb);
-            //if there's no result??
-            if(result.getResults().get(0).getSeries().equals("null")){
-                //nothing to return
+            if(function == DBfunction.none){
+                firstQueryPart="SELECT * FROM ";
             }else{
-                return result.getResults();
+                firstQueryPart="SELECT "+function.toString()+"(*) FROM  ";
             }
 
-        }catch (NullPointerException e){
-            LOG.info("empty query",e);
+
+            Query queryDb;
+
+            if(sensorType == SensorType.AI){
+                influxDB.setDatabase("mLearning");
+
+                a=firstQueryPart+meassurement+" WHERE time > '"+timeStart+"' - "+lowerLimit+" AND time < '"+timeStart+"' - + "+upperLimitOrDuration+" LIMIT "+String.valueOf(limit);
+                queryDb = new Query(a, "mLearning");
+
+            }else{
+                a=firstQueryPart+meassurement+" WHERE \"type\"='"+sensorType.toString()+"' AND time > "+formatedTimeStart+" AND time <"+formatedTimeStart+"+"+tDuration+" LIMIT "+String.valueOf(limit);
+                queryDb = new Query(a, DATABASE_NAME);
+            }
+
+            try{
+
+                QueryResult result=influxDB.query(queryDb);
+                //if there's no result??
+                if(result.getResults().get(0).getSeries().equals("null")){
+                    //nothing to return
+                }else{
+                    return result.getResults();
+                }
+
+            }catch (NullPointerException e){
+                LOG.info("empty query",e);
+            }
         }
-
-
 
         return null;
     }

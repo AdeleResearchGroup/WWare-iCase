@@ -60,10 +60,13 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
         transitionalFunction("2019-01-28");
     }
     public void transitionalFunction(String time){
-        List<QueryResult.Result> ref2018= DB.aiQuery(time," 370d","365d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2017= DB.aiQuery(time," 735d","730d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2016= DB.aiQuery(time," 1101d","1096d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2015= DB.aiQuery(time," 1466d","1461d",DBfunction.mean,5);
+        if(DB.isInfluxRunning()){
+            List<QueryResult.Result> ref2018= DB.aiQuery(time," 370d","365d",DBfunction.mean,5);
+            List<QueryResult.Result>  ref2017= DB.aiQuery(time," 735d","730d",DBfunction.mean,5);
+            List<QueryResult.Result>  ref2016= DB.aiQuery(time," 1101d","1096d",DBfunction.mean,5);
+            List<QueryResult.Result>  ref2015= DB.aiQuery(time," 1466d","1461d",DBfunction.mean,5);
+        }
+
        //String ref2017= DB.QueryDB(SensorType.AI,"\""+time+"\" -735d","5d",DBfunction.mean,5);
         //String ref2016= DB.QueryDB(SensorType.AI,"\""+time+"\" -1101d","5d",DBfunction.mean,5);
         //String ref2015= DB.QueryDB(SensorType.AI,"\""+time+"\" -1466d","5d",DBfunction.mean,5);

@@ -46,7 +46,9 @@ public class ConstantDatabaseWriteApp implements ApplicationLayer, ConstantDatab
 
     @ContextEntity.State.Push(service = ConstantDatabaseWrite.class, state = ConstantDatabaseWrite.APPLICATION_STATE)
     public String pushChange(DateTime currentTime) {
-        influxDB.writeAllSensorsState(currentTime.getMillis());
+        if(influxDB.isInfluxRunning()){
+            influxDB.writeAllSensorsState(currentTime.getMillis());
+        }
         return currentTime.toString();
     }
 
