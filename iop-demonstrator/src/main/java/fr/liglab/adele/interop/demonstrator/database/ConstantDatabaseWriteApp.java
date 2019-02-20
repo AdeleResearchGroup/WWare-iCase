@@ -6,8 +6,8 @@ import fr.liglab.adele.icasa.clockservice.Clock;
 import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
-import fr.liglab.adele.interop.services.database.influxService;
-import fr.liglab.adele.interop.services.database.influxServiceImpl;
+import fr.liglab.adele.interop.services.database.InfluxService;
+import fr.liglab.adele.interop.services.database.InfluxServiceImpl;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 import org.joda.time.DateTime;
@@ -29,11 +29,11 @@ public class ConstantDatabaseWriteApp implements ApplicationLayer, ConstantDatab
 
     @Requires
     Clock clock;
-    @Requires(id = "database", specification = influxService.class, optional = true)
-    private influxService influxDB;
+    @Requires(id = "database", specification = InfluxService.class, optional = true)
+    private InfluxService influxDB;
 
     private @Creator.Field
-    Creator.Entity<influxServiceImpl> DBserice;
+    Creator.Entity<InfluxServiceImpl> DBserice;
 
     @Validate
     public void start() {

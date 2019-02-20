@@ -97,7 +97,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     }
     @Modified(id = "thermometer")
     public void modifiedThermo(ThermometerExt th) {
-        LOG.debug("(SRV) Balc: thermometer moded for a total of: " + thermometers.size());
+       // LOG.debug("(SRV) Balc: thermometer moded for a total of: " + thermometers.size());
         SrvQoS = (thermometers.size() == 0) ? 0 : 100;
         updateState();
         serviceChange();
@@ -177,7 +177,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Override
     public String getClosestExternalThermometerToZone(String zne) {
 
-        LOG.info("finding closest thermometer to: "+zne);
+       // LOG.info("finding closest thermometer to: "+zne);
         double ShortestDistance = 99999;
         int index = 0;
         int ClosestThermometerIndex = 0;
@@ -199,7 +199,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
                     if (Left == 0 && Right == 0 && Top == 0 && Bottom == 0) {//Thermometer right next to zone
                         outsideThermos.put(zne, Thr.getSerialNumber());
                         updateState();
-                        LOG.info("thermometer found at 0m");
+                        //LOG.info("thermometer found at 0m");
                         return Thr.getSerialNumber();
                     } else {
                         double distance = Math.sqrt(Math.pow((double) Left, 2) + Math.pow((double) Right, 2) + Math.pow((double) Top, 2) + Math.pow((double) Bottom, 2));
@@ -216,7 +216,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         if (ShortestDistance < maxDistanceToZone) {
             outsideThermos.put(zne, thermometers.get(ClosestThermometerIndex).getSerialNumber());
             updateState();
-            LOG.info("thermometer found at " + ShortestDistance + "m");
+            //LOG.info("thermometer found at " + ShortestDistance + "m");
             return thermometers.get(ClosestThermometerIndex).getSerialNumber();
         } else {
             outsideThermos.remove(zne);
@@ -231,7 +231,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
      */
     @Override
     public String getAsignedThermometer(String zone) {
-        LOG.info("list updated: " + outsideThermos);
+        //LOG.info("list updated: " + outsideThermos);
         String thermo = (outsideThermos.get(zone) != null) ? outsideThermos.get(zone) : "none";
         return thermo;
     }

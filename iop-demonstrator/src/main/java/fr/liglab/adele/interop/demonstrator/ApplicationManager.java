@@ -51,16 +51,16 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Validate
     public void start(){
-    	lightningApplicationCreator.create("LightApp");
-		followMeApplicationCreator.create("FollowApp");
+    	//lightningApplicationCreator.create("LightApp");
+		//followMeApplicationCreator.create("FollowApp");
 		roomTemperatureApp.create("TemperatureCloningApp");
         databaseAppCreator.create("DBapp");
     }
 
     @Invalidate
     public void stop(){
-    	lightningApplicationCreator.delete("LightApp");
-		followMeApplicationCreator.delete("FollowApp");
+    	//lightningApplicationCreator.delete("LightApp");
+		//followMeApplicationCreator.delete("FollowApp");
 		roomTemperatureApp.delete("TemperatureConingApp");
     };
 
@@ -74,8 +74,8 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 		Map<String,Object> properties = new HashMap<>();
 
 
-		smartShutterCreator.create(instance,properties);
-        attacher.link(instance,zone);
+		/*smartShutterCreator.create(instance,properties);
+        attacher.link(instance,zone);*/
 
     }
 
@@ -85,8 +85,8 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 		String instance = "SmartShutterApp."+zone.getZoneName();
 		String instance2 = "TemperatureApp.:"+zone.getZoneName();
 
-		smartShutterCreator.delete(instance);
-        attacher.unlink(instance,zone);
+		/*smartShutterCreator.delete(instance);
+        attacher.unlink(instance,zone);*/
 
         roomTemperatureApp.delete(instance2);
 		attacher.unlink(instance2,zone);

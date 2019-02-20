@@ -74,6 +74,11 @@ public class ZonesServiceImpl implements ZonesService, ServiceLayer {
         return srvChange;
     }
 
+    /**
+     * returns the zone with the zonename #zone
+     * @param zone name of the zone name to query
+     * @return Zone object
+     */
     @Override
     public Zone getZone(String zone) {
         for(Zone zn:zones){
@@ -84,6 +89,10 @@ public class ZonesServiceImpl implements ZonesService, ServiceLayer {
         return null;
     }
 
+    /**
+     * returns a list with all the zones
+     * @return list of zones
+     */
     @Override
     public List<Zone> getZoneList() {
         return zones;

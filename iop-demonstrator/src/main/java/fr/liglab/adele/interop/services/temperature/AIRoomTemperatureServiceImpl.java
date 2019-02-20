@@ -4,9 +4,7 @@ import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay;
 import fr.liglab.adele.interop.services.database.DBfunction;
-import fr.liglab.adele.interop.services.database.SensorType;
-import fr.liglab.adele.interop.services.database.influxService;
-import fr.liglab.adele.interop.services.database.influxServiceImpl;
+import fr.liglab.adele.interop.services.database.InfluxService;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 import org.influxdb.dto.QueryResult;
@@ -53,22 +51,25 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
 
     }
 
-    //requirements
-    @Requires(id="database", optional = false,specification = influxService.class)
-    private influxService DB;
+    //REQUIREMENTS
+    @Requires(id="database", optional = false,specification = InfluxService.class)
+    private InfluxService DB;
 
     @Validate
     public void start(){
         transitionalFunction("2019-01-28");
     }
     public void transitionalFunction(String time){
-        List<QueryResult.Result> ref2018= DB.aiQuery(SensorType.AI,time," 370d","365d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2017= DB.aiQuery(SensorType.AI,time," 735d","730d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2016= DB.aiQuery(SensorType.AI,time," 1101d","1096d",DBfunction.mean,5);
-        List<QueryResult.Result>  ref2015= DB.aiQuery(SensorType.AI,time," 1466d","1461d",DBfunction.mean,5);
+        List<QueryResult.Result> ref2018= DB.aiQuery(time," 370d","365d",DBfunction.mean,5);
+        List<QueryResult.Result>  ref2017= DB.aiQuery(time," 735d","730d",DBfunction.mean,5);
+        List<QueryResult.Result>  ref2016= DB.aiQuery(time," 1101d","1096d",DBfunction.mean,5);
+        List<QueryResult.Result>  ref2015= DB.aiQuery(time," 1466d","1461d",DBfunction.mean,5);
        //String ref2017= DB.QueryDB(SensorType.AI,"\""+time+"\" -735d","5d",DBfunction.mean,5);
         //String ref2016= DB.QueryDB(SensorType.AI,"\""+time+"\" -1101d","5d",DBfunction.mean,5);
         //String ref2015= DB.QueryDB(SensorType.AI,"\""+time+"\" -1466d","5d",DBfunction.mean,5);
+
+
+       // List<QueryResult.Result> test = DB.QueryDB()
 
 
 
@@ -107,6 +108,13 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
         return tempCurve(lowerMultiplier,higherAdder,formattedTime);
     }
 
+    /**
+     * a simple regretion curve
+     * @param lowerMultiplier variable
+     * @param higherAdder
+     * @param formattedTime time of the day from 0(0:00) to 23.5 (11:30pm)
+     * @return
+     */
     public double tempCurve(double lowerMultiplier,double higherAdder,double formattedTime){
         return 8.190593 +higherAdder+ 0.2831266*formattedTime*lowerMultiplier - 0.3401877*Math.pow(formattedTime,2)*lowerMultiplier + 0.05460142*Math.pow(formattedTime,3) *lowerMultiplier- 0.003024781*Math.pow(formattedTime,4)*lowerMultiplier + 0.00005486382*Math.pow(formattedTime,5)*lowerMultiplier;
     }

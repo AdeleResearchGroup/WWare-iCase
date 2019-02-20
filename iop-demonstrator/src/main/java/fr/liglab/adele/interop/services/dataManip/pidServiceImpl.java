@@ -1,7 +1,11 @@
 package fr.liglab.adele.interop.services.dataManip;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
+import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
+import org.apache.felix.ipojo.annotations.Requires;
+
+import java.util.List;
 
 @ContextEntity(coreServices = {pidService.class, ServiceLayer.class})
 public class pidServiceImpl implements pidService,ServiceLayer {
@@ -12,6 +16,8 @@ public class pidServiceImpl implements pidService,ServiceLayer {
             private int SrvQoS;
 
     MiniPID miniPID;
+    @Requires(id="localThermos",specification = Thermometer.class,optional = false)
+    List<Thermometer> th;
 
     @Override
     public int getMinQos() {
