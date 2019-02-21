@@ -312,12 +312,12 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
         System.out.printf("delta:%B\n",(time-lastTime>2000000));
         System.out.println(time-lastTime);*/
 
-        if(time-lastTime>2000000){
+        if(time-lastTime>500000){
             lastTime=time;
             setState();
 
             //appState= String.valueOf(appAM()+zoneAM(zone));
-            // LOG.info("AM (global-zone:" + zone + "): (" + appAM() + "-" + zoneAM(zone) + ")");
+             LOG.info("AM (global-zone:" + zone + "): (" + appAM() + "-" + zoneAM(zone) + ")");
             //determining the scenario to run...
             int scenario = zoneAM(zone);
             System.out.printf("SCR\tlOrg\ttime\tltime\tSCN\titeration\n");
@@ -352,7 +352,14 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                 //SCENARIO 1: local thermometer available >>> PID controller
                 double ZoneTemperature = (double)internalThermometerServiceCreator.getInstance(zone + ".thermometers").getTemperature();
                 double Tempobjective = 283.15;//aka 10°C
-                double output = pidService.getInstance("pidCtrl").getControlVariableValue(0.5, 0.1, 0.6, Tempobjective, ZoneTemperature);
+
+                if(!pidService.getInstance("pidCtrl").getServiceStatus().equals("init")){
+                    pidService.getInstance("pidCtrl").setPIDvars(0.1, 0.1, 0.6);
+                    pidService.getInstance("pidCtrl").startPID(Tempobjective);
+                }
+
+
+                double output = pidService.getInstance("pidCtrl").getControlVariableValue( Tempobjective, ZoneTemperature);
                 System.err.printf("Target\tActual\tOutput\tError\n");
                 System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f\n", Tempobjective, ZoneTemperature, output, (Tempobjective-ZoneTemperature));
                 setHeatersPower(output,zone);

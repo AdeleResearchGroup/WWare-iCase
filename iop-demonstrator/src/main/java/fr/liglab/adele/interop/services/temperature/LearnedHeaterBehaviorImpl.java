@@ -49,7 +49,7 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
     @Override
     public Double getHeaterPorcentage(Double ReferenceTemperature, String zone) {
         srvState="2.0";
-        System.out.println("++++++");
+        System.out.println("++++++"+zone);
         System.out.println(DB.manualQuery("SELECT MAX(value) FROM temperature WHERE type = 'ThermometerExt'","test").get(0).getSeries());
         System.out.println("++++++");
         System.out.println(DB.manualQuery("SELECT MAX(value) FROM temperature WHERE type = 'ThermometerExt'","test").get(0).getSeries().get(0).getValues().get(0));
@@ -89,7 +89,12 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
                 System.out.println(time);
                 System.out.println(result.get(0).getValues().get(0).get(1));
                 System.out.println("------");
-                return (Double)DB.manualQuery(" SELECT value FROM powerLvl WHERE zone = '"+zone+"' AND type = 'Heater' AND time = '"+time+"'","test").get(0).getSeries().get(0).getValues().get(0).get(1);
+                try{
+                    return (Double)DB.manualQuery(" SELECT value FROM powerLvl WHERE zone = '"+zone+"' AND type = 'Heater' AND time = '"+time+"'","test").get(0).getSeries().get(0).getValues().get(0).get(1);
+                }catch (NullPointerException e){
+                    return null;
+                }
+
             }
             }
 
