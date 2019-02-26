@@ -13,5 +13,5 @@ public interface LearnedHeaterBehavior extends ServiceLayer {
 
     String getServiceStatus();
 
-    Double getHeaterPorcentage(Double ReferenceTemperature, String zone);
+    double getHeaterPorcentage(double reference, String zone);
 }

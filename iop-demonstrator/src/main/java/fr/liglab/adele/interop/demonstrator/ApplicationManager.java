@@ -5,18 +5,20 @@ import fr.liglab.adele.icasa.device.light.Photometer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
 import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
-import fr.liglab.adele.interop.demonstrator.database.ConstantDatabaseWriteApp;
 import fr.liglab.adele.interop.demonstrator.home.lightning.HomeLightningApplication;
 import fr.liglab.adele.interop.demonstrator.home.lightning.LightFollowApplication;
 import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
 import fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController;
+
 import fr.liglab.adele.iop.device.api.IOPLookupService;
 import fr.liglab.adele.iop.device.api.IOPService;
+
 import org.apache.felix.ipojo.annotations.*;
 import org.apache.felix.ipojo.dependency.interceptors.DependencyInterceptor;
 import org.apache.felix.ipojo.dependency.interceptors.ServiceRankingInterceptor;
 import org.apache.felix.ipojo.dependency.interceptors.ServiceTrackingInterceptor;
 import org.apache.felix.ipojo.dependency.interceptors.TransformedServiceReference;
+
 import org.apache.felix.ipojo.util.DependencyModel;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -40,7 +42,6 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
 
     @Creator.Field Creator.Entity<HomeLightningApplication> lightningApplicationCreator;
     @Creator.Field Creator.Entity<LightFollowApplication> followMeApplicationCreator;
-    @Creator.Field Creator.Entity<ConstantDatabaseWriteApp> databaseAppCreator;
 
     private @Creator.Field Creator.Entity<ShutterController> smartShutterCreator;
 
@@ -54,7 +55,6 @@ public class ApplicationManager implements PeriodicRunnable, ServiceTrackingInte
     	//lightningApplicationCreator.create("LightApp");
 		//followMeApplicationCreator.create("FollowApp");
 		roomTemperatureApp.create("TemperatureCloningApp");
-        databaseAppCreator.create("DBapp");
     }
 
     @Invalidate

@@ -646,7 +646,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 	}
 
 	@Override
-	public void addProcessor(IFilter arg0) {
+	public void addProcessor(IFilter<IEvent> arg0) {
 	}
 
 	@Override

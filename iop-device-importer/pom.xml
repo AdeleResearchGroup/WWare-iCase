@@ -164,6 +164,8 @@
 						</Import-Package>
 						<Export-Package>
 							fr.liglab.adele.iop.device.api.*,
+							fr.liglab.adele.iop.device.exporter.*,
+							de.mannheim.wifo2.iop.service.model.*,
 							fr.liglab.adele.iop.services.api.*
 						</Export-Package>
 					</instructions>

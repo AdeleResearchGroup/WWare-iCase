@@ -102,7 +102,6 @@
 			<groupId>fr.liglab.adele.icasa</groupId>
 			<artifactId>iop-device-importer</artifactId>
 			<version>${project.version}</version>
-			<type>bundle</type>
 		</dependency>
 
 		<dependency>
@@ -112,6 +111,7 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.wisdom-framework</groupId>
 			<artifactId>wisdom-api</artifactId>

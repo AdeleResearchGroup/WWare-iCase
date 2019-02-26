@@ -1,15 +1,19 @@
 package fr.liglab.adele.interop.services.temperature;
 
+import java.util.concurrent.TimeUnit;
+
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
-import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay;
-import fr.liglab.adele.interop.services.database.DBfunction;
-import fr.liglab.adele.interop.services.database.InfluxService;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
+
+import fr.liglab.adele.interop.time.series.influx.Database;
+import static fr.liglab.adele.interop.time.series.influx.Database.*;
+import static fr.liglab.adele.interop.time.series.influx.Database.Function.*;
+
 import org.influxdb.dto.QueryResult;
 
-import java.util.List;
+
+
 
 @ContextEntity(coreServices = {RoomTemperatureService.class, ServiceLayer.class})
 
@@ -26,7 +30,6 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
     private int SrvQoS;
 
     private static final Integer MIN_QOS = 50;
-    private MomentOfTheDay.PartOfTheDay scheduledPeriod = null;
 
     //implementation functions
 
@@ -51,43 +54,36 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
 
     }
 
-    //REQUIREMENTS
-    @Requires(id="database", optional = false,specification = InfluxService.class)
-    private InfluxService DB;
+	private static final String DATABASE_NAME = "mLearning";
+	
+	private final Database database = new Database(DATABASE_NAME);
 
+	private static final String TIMESTAMP_OF_START_DATE = "2019-01-28";
+	
+	private static final int DAYS_PER_YEAR	= 365;
+		
     @Validate
-    public void start(){
-        transitionalFunction("2019-01-28");
+    public void start() {
+    	database.setVerifyRunning(true);
+        transitionalFunction(TIMESTAMP_OF_START_DATE);
     }
-    public void transitionalFunction(String time){
-        if(DB.isInfluxRunning()){
-            List<QueryResult.Result> ref2018= DB.aiQuery(time," 370d","365d",DBfunction.mean,5);
-            List<QueryResult.Result>  ref2017= DB.aiQuery(time," 735d","730d",DBfunction.mean,5);
-            List<QueryResult.Result>  ref2016= DB.aiQuery(time," 1101d","1096d",DBfunction.mean,5);
-            List<QueryResult.Result>  ref2015= DB.aiQuery(time," 1466d","1461d",DBfunction.mean,5);
-        }
-
-       //String ref2017= DB.QueryDB(SensorType.AI,"\""+time+"\" -735d","5d",DBfunction.mean,5);
-        //String ref2016= DB.QueryDB(SensorType.AI,"\""+time+"\" -1101d","5d",DBfunction.mean,5);
-        //String ref2015= DB.QueryDB(SensorType.AI,"\""+time+"\" -1466d","5d",DBfunction.mean,5);
-
-
-       // List<QueryResult.Result> test = DB.QueryDB()
-
-
-
-
-
-      /*  System.out.println("");
-        System.out.println(ref2015);
-        System.out.println("");
-        System.out.println(ref2016);
-        System.out.println("");
-        System.out.println(ref2017);
-        System.out.println("");
-        System.out.println(ref2018);*/
-
+    
+    
+    public void transitionalFunction(String start) {
+    	QueryResult ref2018 = averageValues(start, (1 * DAYS_PER_YEAR) + 5, 		(1 * DAYS_PER_YEAR));
+    	QueryResult ref2017 = averageValues(start, (2 * DAYS_PER_YEAR) + 5,			(2 * DAYS_PER_YEAR));
+    	QueryResult ref2016 = averageValues(start, (3 * DAYS_PER_YEAR) + 5 + 1, 	(3 * DAYS_PER_YEAR) + 1);
+    	QueryResult ref2015 = averageValues(start, (4 * DAYS_PER_YEAR) + 5 + 1, 	(4 * DAYS_PER_YEAR) + 1);
     }
+    
+    public QueryResult averageValues(String start, int lowerLimit, int upperLimit) {
+    	
+    	String since = since(expression(quoted(start,true), "-", duration(lowerLimit, TimeUnit.DAYS)));
+    	String until = until(expression(quoted(start,true), "+", duration(upperLimit, TimeUnit.DAYS)));
+    	
+    	return database.select(MEAN.of("*"),"Temp", 5, since, until);
+    } 
+
 
     /**
      * Based on a simple temperature model it returns the estimated temperature in a day,
