@@ -13,7 +13,7 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 
-import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControl;
+import fr.liglab.adele.interop.services.temperature.TemperatureControl;
 import fr.liglab.adele.interop.time.series.influx.Database;
 
 import org.influxdb.dto.BatchPoints;
@@ -125,20 +125,25 @@ public class MeasurementStorage implements PeriodicRunnable {
 
 	@Override
 	public long getPeriod() {
-		return 1;
+		return 30;
 	}
 
 	@Override
 	public TimeUnit getUnit() {
-		return TimeUnit.HOURS;
+		return TimeUnit.MINUTES;
 	}
 
 	@Override
 	public void run() {
-		if (database.isRunning()) {
-			store();
+		try {
+			if (database.isRunning()) {
+				store();
+			}
+		} catch (Throwable unexpected) {
+			unexpected.printStackTrace();
 		}
 	}
+
 	@Requires(optional = true, proxy = false, specification = GenericDevice.class)
 	private List<GenericDevice> devices;
 
@@ -148,7 +153,7 @@ public class MeasurementStorage implements PeriodicRunnable {
 	@Requires(optional = true, proxy = false, specification = ApplicationLayer.class)
 	private List<ApplicationLayer> applications;
 
-	private void store() {
+	private void store() throws Throwable {
 
 		long timestamp = clock.currentTime(TimeUnit.NANOSECONDS);
 
@@ -157,7 +162,7 @@ public class MeasurementStorage implements PeriodicRunnable {
 		if ( previousRun != null) {
 			points.point(
 				Measurement.CLOCK.at(timestamp, TimeUnit.NANOSECONDS).
-				addField("stamp", timestamp).
+				addField("real", System.currentTimeMillis()).
 				addField("elapsed", timestamp - previousRun).
 				build()
 			);
@@ -171,31 +176,39 @@ public class MeasurementStorage implements PeriodicRunnable {
 			if (deviceMeasurement == Measurement.UNKNOWN) {
 				continue;
 			}
-			
+
+			/*
+			 * Handle NaN and Infinite values as absent values see https://github.com/influxdata/influxdb/issues/4089
+			 */
+			double value = valueOf(device).doubleValue();
+			if (! Double.isFinite(value)) {
+				continue;
+			}
+
 			points.point(
 				deviceMeasurement.at(timestamp, TimeUnit.NANOSECONDS).
 				tag("name", device.getSerialNumber()).
 				tag("type", typeOf(device)).
 				tag("zone", zoneOf(device)).
-				addField("value", valueOf(device).doubleValue()).
-				build()				
+				addField("value",value).build()
 			);
 		}
 
 		for (ServiceLayer service : services) {
 			points.point(
 				Measurement.QOS.at(timestamp, TimeUnit.NANOSECONDS).
+				tag("name", service.getServiceName()).
 				tag("type", "service").
 				tag("zone", zoneOf(service)).
-				addField("value", service.getServiceQoS()).
+				addField("value", service.getQoS()).
 				build()
 			);
 		}
 		
         for(ApplicationLayer application : applications) {
-    		if (application instanceof RoomTemperatureControl) {
+    		if (application instanceof TemperatureControl) {
 
-                RoomTemperatureControl.Availability availability = ((RoomTemperatureControl) application).getAvailability();
+                TemperatureControl.Availability availability = ((TemperatureControl) application).getAvailability();
     			points.point(
     				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
 					tag("type", "app").
@@ -337,9 +350,11 @@ public class MeasurementStorage implements PeriodicRunnable {
 		return (D device) -> booleanFunction.apply(device) ? 1 : 0;
 	}
 
-	private static <D extends GenericDevice, Q extends Quantity<Q>> Function<D, Double> numeric(
-			Function<D, Quantity<Q>> quantityFunction, Unit<Q> unit) {
-		return (D device) -> quantityFunction.apply(device).to(unit).getValue().doubleValue();
+	private static <D extends GenericDevice, Q extends Quantity<Q>> Function<D, Double> numeric(Function<D, Quantity<Q>> quantityFunction, Unit<Q> unit) {
+		return (D device) -> {
+			Quantity<Q> value = quantityFunction.apply(device);
+			return value != null ? value.to(unit).getValue().doubleValue() : Double.NaN;
+		};
 	}
 
 	@SafeVarargs
