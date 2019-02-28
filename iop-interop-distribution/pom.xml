@@ -116,16 +116,6 @@
 		    <scope>runtime</scope>
 		</dependency>
 		
-		<!--Applications -->
-		
-		
-        <dependency>
-			<groupId>fr.liglab.adele.icasa.apps</groupId>
-			<artifactId>binary.light.follow.me.application</artifactId>
- 			<type>bundle</type>
-            <version>${icasa.version}</version>
-        </dependency>
-		
 	</dependencies>
 
 	<build>

@@ -32,10 +32,6 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
 
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS, value = "0",directAccess = true)
-    private int SrvQoS;
-
-
     //STATES CHANGE
     @ContextEntity.State.Push(service = LearnedHeaterBehavior.class, state = RoomThermometerService.SERVICE_STATUS)
     public Double pushService(Double serviceState){
@@ -146,13 +142,8 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
     private static final double 	MAX_DELTA 		= 0.5;
     
     @Override
-    public int getMinQos() {
+    public int getQoS() {
         return 100;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        return SrvQoS;
     }
 
     @Override

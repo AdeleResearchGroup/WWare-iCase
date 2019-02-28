@@ -14,9 +14,6 @@ import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
 
 import java.util.List;
-import java.util.function.Supplier;
-
-
 
 @ContextEntity(coreServices = {LightningService.class, ServiceLayer.class,})
 
@@ -25,6 +22,10 @@ import java.util.function.Supplier;
 public class LightningServiceImpl implements LightningService, ServiceLayer {
 
 
+	@Requires(specification=BinaryLight.class, filter=ZoneService.OBJECTS_IN_ZONE, optional=false, proxy=false)
+    @ContextRequirement(spec = {LocatedObject.class})
+    private List<BinaryLight> binaryLights;
+
 	private PartOfTheDay scheduledPeriod = null;
 	
 	@Override
@@ -32,68 +33,35 @@ public class LightningServiceImpl implements LightningService, ServiceLayer {
 		this.scheduledPeriod = period;
 	}
 
-	
-    //requirements
-    @Requires(optional = false, filter = ZoneService.objectInSameZone, proxy = false, specification = BinaryLight.class)
-    @ContextRequirement(spec = {LocatedObject.class})
-    private List<BinaryLight> binaryLights;
 
     @Requires(id = "MoD", optional=false)
     MomentOfTheDay momentOfTheDay;
 
     @Modified(id = "MoD")
     protected void momentOfDayUpdated() {
-    	
-    	if (momentOfTheDay.getCurrentPartOfTheDay() == scheduledPeriod) {
-    		
-    		System.out.println("activating lightning schedule "+scheduledPeriod);
-    		
-    		for (BinaryLight binaryLight : binaryLights) {
-        		binaryLight.turnOn();
-    		}
-    	}
-    	else {
-    		for (BinaryLight binaryLight : binaryLights) {
-        		binaryLight.turnOff();
-    		}
-    	}
+
+    	System.out.println("verifying lightning schedule at "+momentOfTheDay.getCurrentPartOfTheDay()+" scheduled("+scheduledPeriod+")");
+		for (BinaryLight binaryLight : binaryLights) {
+    		binaryLight.setPowerStatus(momentOfTheDay.getCurrentPartOfTheDay() == scheduledPeriod);
+		}
+
     }
 
 
-    private static final Integer MIN_QOS = 34;
-
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
-    public String name;
+    @ContextEntity.State.Field(service=ServiceLayer.class, state=ServiceLayer.NAME)
+    private String name;
 
     @Override
     public String getServiceName() {
         return name;
     }
 
-
-    @ContextEntity.State.Field(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
-    private int AppQoS;
+    @ContextEntity.State.Field(service=ServiceLayer.class, state=ServiceLayer.SERVICE_QOS, value="100")
+    private int qos;
 
     @Override
-    public int getServiceQoS() {
-        return AppQoS;
-    }
-
-    @ContextEntity.State.Pull(service = ServiceLayer.class,state = ServiceLayer.SERVICE_QOS)
-    private Supplier<Integer> currentQoS = ()-> {
-
-    	int currentQoS = 0;
-    			
-        if(binaryLights.size()>0) {
-        	currentQoS+=35;
-        }
-
-    	return currentQoS;
-    };
-    
-    @Override
-    public int getMinQos() {
-        return MIN_QOS;
+    public int getQoS() {
+        return qos;
     }
 
 }

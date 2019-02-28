@@ -14,23 +14,15 @@ public class pidServiceImpl implements pidService,ServiceLayer {
     private String status;
 
     @ContextEntity.State.Field(service = ServiceLayer.class,state = ServiceLayer.NAME)
-            public String name;
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS,value="100",directAccess = true)
-            private int SrvQoS;
-
+    private String name;
+    
     MiniPID miniPID;
     @Requires(id="localThermos",specification = Thermometer.class,optional = false)
     List<Thermometer> th;
 
     @Override
-    public int getMinQos() {
+    public int getQoS() {
         return 100;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        SrvQoS=100;
-        return SrvQoS;
     }
 
     @Override

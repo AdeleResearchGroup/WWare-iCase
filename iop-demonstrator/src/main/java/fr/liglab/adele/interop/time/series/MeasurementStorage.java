@@ -13,6 +13,7 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 
+import fr.liglab.adele.interop.services.shutter.ShutterController;
 import fr.liglab.adele.interop.services.temperature.TemperatureControl;
 import fr.liglab.adele.interop.time.series.influx.Database;
 
@@ -206,6 +207,7 @@ public class MeasurementStorage implements PeriodicRunnable {
 		}
 		
         for(ApplicationLayer application : applications) {
+        	
     		if (application instanceof TemperatureControl) {
 
                 TemperatureControl.Availability availability = ((TemperatureControl) application).getAvailability();
@@ -233,6 +235,20 @@ public class MeasurementStorage implements PeriodicRunnable {
 					addField("value", availability.remotes.getValue().doubleValue()).
 					build()
     			);                
+    		}
+    		
+    		if (application instanceof ShutterController && application instanceof ZoneService) {
+    			
+    			double threshold = ((ShutterController) application).getThreshold();
+
+    			points.point(
+        				Measurement.ILLUMINANCE.at(timestamp, TimeUnit.NANOSECONDS).
+    					tag("name","ShutterController.threshold").
+    					tag("type", "app").
+    					tag("zone", ((ZoneService) application).getZone()).
+    					addField("value", threshold).
+    					build()
+        			);                
     		}
         }
 
