@@ -58,7 +58,7 @@ public class ShutterControllerApplication implements ApplicationLayer, ShutterCo
     private void modified() {
     	
     	double currentLuminosity = photometer.getIlluminance().to(Units.LUX).getValue().doubleValue();
-		double shutterLevel 	=  currentLuminosity >= threshold ? 0d : 1d;
+		double shutterLevel 	=  currentLuminosity <= threshold ? 0d : 1d;
 		
 		for (WindowShutter	shutter : shutters) {
 			shutter.setShutterLevel(shutterLevel);
