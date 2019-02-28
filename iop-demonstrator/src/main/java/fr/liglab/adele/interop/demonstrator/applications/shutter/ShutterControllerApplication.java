@@ -10,6 +10,7 @@ import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.layering.services.location.ZoneServiceFunctionalExtension;
 
+import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.BindingPolicy;
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -38,32 +39,36 @@ public class ShutterControllerApplication implements ApplicationLayer, ShutterCo
 
     private double threshold = 1600;
     
-    /* (non-Javadoc)
-	 * @see fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController#setThreshold(double)
-	 */
-    @Override
-	public void setThreshold(double threshold) {
-    	this.threshold = threshold;
-    }
-
-    /* (non-Javadoc)
-	 * @see fr.liglab.adele.interop.demonstrator.smart.shutter.ShutterController#getThreshold()
-	 */
     @Override
 	public double getThreshold() {
     	return this.threshold;
     }
 
+    @Override
+	public void setThreshold(double threshold) {
+    	this.threshold = threshold;
+    	control();
+    }
+
+    @Bind(id="photometer")
+    private void bind() {
+    	control();
+    }
+
     @Modified(id="photometer")
     private void modified() {
-    	
+    	control();
+    }
+
+    private void control() {
+
     	double currentLuminosity = photometer.getIlluminance().to(Units.LUX).getValue().doubleValue();
 		double shutterLevel 	=  currentLuminosity <= threshold ? 0d : 1d;
 		
 		for (WindowShutter	shutter : shutters) {
 			shutter.setShutterLevel(shutterLevel);
 		}
+    	
     }
-
 
 }
