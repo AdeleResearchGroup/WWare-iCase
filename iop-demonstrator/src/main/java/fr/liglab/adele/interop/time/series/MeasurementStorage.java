@@ -13,7 +13,7 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 
-import fr.liglab.adele.interop.services.temperature.TemperatureControl;
+import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControl;
 import fr.liglab.adele.interop.time.series.influx.Database;
 
 import org.influxdb.dto.BatchPoints;
@@ -200,15 +200,15 @@ public class MeasurementStorage implements PeriodicRunnable {
 				tag("name", service.getServiceName()).
 				tag("type", "service").
 				tag("zone", zoneOf(service)).
-				addField("value", service.getQoS()).
+				addField("value", service.getServiceQoS()).
 				build()
 			);
 		}
 		
         for(ApplicationLayer application : applications) {
-    		if (application instanceof TemperatureControl) {
+    		if (application instanceof RoomTemperatureControl) {
 
-                TemperatureControl.Availability availability = ((TemperatureControl) application).getAvailability();
+				RoomTemperatureControl.Availability availability = ((RoomTemperatureControl) application).getAvailability();
     			points.point(
     				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
 					tag("type", "app").

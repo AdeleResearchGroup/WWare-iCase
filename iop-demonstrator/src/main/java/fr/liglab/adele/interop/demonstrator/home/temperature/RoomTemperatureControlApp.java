@@ -20,15 +20,10 @@ import org.apache.felix.ipojo.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.net.PercentEscaper;
-
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.measure.Quantity;
-import javax.measure.quantity.Dimensionless;
 
 
 @ContextEntity(coreServices = {ApplicationLayer.class, RoomTemperatureControl.class})
@@ -296,14 +291,14 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
     private int lastOriginer =0;
     private int lastScenario=0;
     private long lastTime=0;
-    private int interaction=-1;
+    private int iteraction =-1;
     /**
      * Sets the power level of the heaters in a zone, depending on the zoneAM and the appAm level
      *
      * @param zone Zone for which the temperature will be attempted to be set
      */
     public void setTemperature(String zone, int Originer,long time) {
-        interaction+=1;
+        iteraction +=1;
         Calendar date = Calendar.getInstance();
         date.setTimeInMillis(time);
         int h=date.get(Calendar.HOUR_OF_DAY);
@@ -328,7 +323,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
             //determining the scenario to run...
             int scenario = zoneAM(zone);
             System.out.printf("SCR\tlOrg\ttime\tltime\tSCN\titeration\n");
-            System.out.printf("%1d\t%1d\t%13d\t%13d\t%d\t%4d\n",Originer, lastOriginer,time,lastTime,scenario,interaction);
+            System.out.printf("%1d\t%1d\t%13d\t%13d\t%d\t%4d\n",Originer, lastOriginer,time,lastTime,scenario, iteraction);
 
             if(scenario >= 0 && scenario < 17){
                 //SCENARIO 5: no enough resources to set temperature
@@ -336,18 +331,18 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                 //SCENARIO 4:
             }else if(scenario > 17 && scenario < 20){
                 //SCENARIO 3: no local
+                double farTemp = (Double) remoteThermometerService.getCurrentTemperature().getValue();
+                Double powerPercent = mlService.getInstance("MLCtrl").getHeaterPorcentage(farTemp,283.15,zone,24);
+                setHeatersPower(powerPercent, zone);
+
+
             }else if(scenario >= 20 && scenario < 24){
                 //SCENARIO 2: local thermo unavailable but balcony  Thermo available  >>> impossible to PID
                 String nearestThermo = balconyThermometerService.getClosestExternalThermometerToZone(zone);
                 LOG.info("geting temp from local thermometer service: " + nearestThermo, balconyThermometerService);
                 double nearTemp = (double) balconyThermometerService.getCurrentTemperature(nearestThermo).getValue();
 
-                Double powerPercent = mlService.getInstance("MLCtrl").getHeaterPorcentage(nearTemp,zone);
-
-                //get min and max temperature for the zone??
-                //need to get the same outside temperature date and then with that date get the heater level
-
-
+                Double powerPercent = mlService.getInstance("MLCtrl").getHeaterPorcentage(nearTemp,283.15,zone,24);
                 if (nearTemp != -2.0d) {
                     System.out.printf("%s\t%s",powerPercent, zone);
                     if(powerPercent != null){
@@ -375,43 +370,7 @@ public class RoomTemperatureControlApp implements ApplicationLayer, RoomTemperat
                 //impossible scenario
             }
 
-            switch (8) {
-                case 1:
-                case 2:
-                case 4:
-                case 6:
-                    if (appAM() == 5) {
-                        LOG.warn("Local thermometers not found for zone:" + zone + ", asking Base...");
-                        remoteThermometerService.setConnection(new String[]{Thermometer.class.getCanonicalName()});
-                    } else {
-                        LOG.warn("can't set Temperature, insufficient resources", zone);
-                    }
 
-                    break;
-                case 3:
-                    //iop present
-                    double farTemp = (Double) remoteThermometerService.getCurrentTemperature().getValue();
-                    setHeatersPower(farTemp, zone);
-                    break;
-                case 5:
-                    //balcony present
-                case 7:
-                    //balcony+iop present
-                    String nearestThermo = balconyThermometerService.getClosestExternalThermometerToZone(zone);
-                    LOG.info("geting temp from local thermometer service: " + nearestThermo, balconyThermometerService);
-                    double nearTemp = (double) balconyThermometerService.getCurrentTemperature(nearestThermo).getValue();
-
-
-
-
-                    if (nearTemp != -2.0d) {
-                        setHeatersPower(nearTemp, zone);
-                    }
-                    break;
-                case 8:
-                    //failsafe
-                    break;
-            }
             lastScenario = scenario;
         }else {
             lastTime=time;

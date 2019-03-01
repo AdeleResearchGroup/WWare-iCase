@@ -84,12 +84,54 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
     	return result != null ? Double.class.cast(result.get(1)) : 0.0d;
     }
 
+    int iteration = 1;
+    double iddleTimePercentage=1;
 
+    /**
+     *
+     * @param currentTemp
+     * @param targetTemp
+     * @param zone  a String with the name of the zone the temperature will be set
+     * @param iterationsPerDay
+     * @return
+     */
     @Override
-    public double getHeaterPorcentage(double reference, String zone) {
+    public double getHeaterPorcentage(double currentTemp, double targetTemp, String zone, int iterationsPerDay) {
         
     	srvState="2.0";
-       
+
+        double internalTempReference = 1.0065*targetTemp;
+    	double TempPercentage = currentTemp/internalTempReference;
+
+
+    	iddleTimePercentage = (iteration==1)?(-3149.312 + 9767.348*TempPercentage - 10100.98*Math.pow(TempPercentage,2) + 3483.876*Math.pow(TempPercentage,3)):iddleTimePercentage;
+
+
+    	double maxPowerOutput = 1344.338 - 4158.196*TempPercentage + 4293.299*Math.pow(TempPercentage,2) - 1479.396*Math.pow(TempPercentage,3);
+
+    	maxPowerOutput = maxPowerOutput<0?0:maxPowerOutput;
+    	maxPowerOutput = maxPowerOutput>1?1:maxPowerOutput;
+
+    	int middleOfIteractions = iterationsPerDay/2;
+    	int evenIddleSlots = (int)(iterationsPerDay*iddleTimePercentage);
+    	int oddIddleSlots = iterationsPerDay-evenIddleSlots;
+
+    	iteration = (iteration <=iterationsPerDay)?iteration:1;
+        System.out.println("temp:"+currentTemp+", iter:"+iteration+"maxPow"+maxPowerOutput);
+
+            //is the iteration an even number?
+            if(iteration%2==0){
+                //is this n even number less than the number of evenIddleSlots?
+                iteration +=1;
+                return ((iteration/2)<=evenIddleSlots)? 0:maxPowerOutput;
+            }else{
+                iteration +=1;
+                return ((iteration/2)<=oddIddleSlots)? 0:maxPowerOutput;
+            }
+
+
+
+        /*
     	
     	List<Object> maxResult = externalTemperature(MAX); 
     	List<Object> minResult = externalTemperature(MIN);
@@ -100,24 +142,27 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
     	}
 
 
+
+
+
     	double maxTemperature = Double.class.cast(maxResult.get(1));
     	double minTemperature = Double.class.cast(minResult.get(1));
     	
         System.err.printf("Reference\tMin\tMax\n");
-        System.err.printf("%3.2f\t%3.2f\t%3.2f\n", reference, minTemperature, maxTemperature);
+        System.err.printf("%3.2f\t%3.2f\t%3.2f\n", currentTemp, minTemperature, maxTemperature);
 
         
         //ToDO make verification that at the time given from max and min Temp, the Heater did exist
         //checking if ReferenceTemperature is in the range of the saved temperatures...
         
-        if( reference > maxTemperature) {
+        if( currentTemp > maxTemperature) {
             //return heater % of max temp recorded
             System.out.println("ref to high "+maxResult);
             return heaterLevel(zone, atTime(timestamp(maxResult)));
 
         }
 
-        if( reference < minTemperature) {
+        if( currentTemp < minTemperature) {
             //return heater% of min temp recorded
             System.out.println("ref to low "+minResult);
             return heaterLevel(zone, atTime(timestamp(minResult)));
@@ -125,13 +170,13 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
         }
 
         /*
-         * Try to find the registered temperature closest to the reference
+         * Try to find the registered temperature closest to the currentTemp
          */
-        
+        /*
         for (double delta = 0.0d; delta < MAX_DELTA; delta += DELTA_INCREMENT) {
 
         	System.out.println("searching in interval "+delta+".");
-        	List<Object> lasInInterval = externalTemperature(LAST, valueIn(reference - delta, reference + delta));
+        	List<Object> lasInInterval = externalTemperature(LAST, valueIn(currentTemp - delta, currentTemp + delta));
         	
         	if (lasInInterval != null) {
                 System.out.println("ref to last value "+lasInInterval);
@@ -139,7 +184,7 @@ public class LearnedHeaterBehaviorImpl implements LearnedHeaterBehavior, Service
         	}
 		}
 
-         return 0.0d;
+         return 0.0d;*/
     }
 
     private static final double 	DELTA_INCREMENT = 0.1;
