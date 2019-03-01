@@ -8,8 +8,8 @@ import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.layering.services.location.ZoneServiceFunctionalExtension;
 import fr.liglab.adele.icasa.location.LocatedObject;
-import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
-import fr.liglab.adele.interop.services.location.ZonesService;
+import fr.liglab.adele.interop.demonstrator.applications.temperature.TemperatureControlApplication;
+
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -21,11 +21,11 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Temperature;
 import java.util.List;
 
-@ContextEntity(coreServices = {RoomThermometerService.class,ServiceLayer.class})
-@FunctionalExtension(id = "ZoneService", contextServices = ZoneService.class, implementation = ZoneServiceFunctionalExtension.class)
-public class RoomThermometerServiceImpl implements RoomThermometerService, ServiceLayer{
+@ContextEntity(coreServices = {RoomThermometerService.class, ServiceLayer.class})
 
-    private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
+@FunctionalExtension(id = "ZoneService", contextServices = ZoneService.class, implementation = ZoneServiceFunctionalExtension.class)
+
+public class RoomThermometerServiceImpl implements RoomThermometerService, ServiceLayer{
 
     //SERVICE's STATES
 
@@ -38,28 +38,14 @@ public class RoomThermometerServiceImpl implements RoomThermometerService, Servi
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
 
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS, value = "0",directAccess = true)
-    private int SrvQoS;
 
-    //REQUIREMENTS
-
-    @Requires(id="thermometer",optional = false, filter = ZoneService.objectInSameZone, proxy = false, specification = Thermometer.class)
+    @Requires(id="thermometer", optional=false, filter=ZoneService.OBJECTS_IN_ZONE, proxy=false)
     @ContextRequirement(spec = {LocatedObject.class})
     public List<Thermometer> thermometers;
 
 
-    @Bind(id="thermometer")
-    public void bindThermometer(Thermometer th){
-        SrvQoS=(thermometers.size()>1)?100:0;
-    }
-    @Unbind(id="thermometer")
-    public void unbindThermometer(Thermometer th){
-        SrvQoS=(thermometers.size()==0)?0:100;
-    }
-
-    @Modified(id="thermometer")
+      @Modified(id="thermometer")
     public void modifyThermometer(Thermometer th){
-        SrvQoS=(thermometers.size()>1)?100:0;
         srvState=th.getTemperature().getValue().doubleValue();
         pushService(th.getTemperature().getValue().doubleValue());
     }
@@ -85,13 +71,8 @@ public class RoomThermometerServiceImpl implements RoomThermometerService, Servi
     }
 
     @Override
-    public int getMinQos() {
+    public int getQoS() {
         return 100;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        return SrvQoS;
     }
 
     @Override

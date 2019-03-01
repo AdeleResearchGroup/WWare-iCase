@@ -1,15 +1,16 @@
-package fr.liglab.adele.interop.demonstrator.home.temperature;
+package fr.liglab.adele.interop.services.temperature;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 
 import fr.liglab.adele.cream.annotations.ContextService;
 import fr.liglab.adele.cream.annotations.State;
+import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.Units;
 
-@ContextService
-public interface RoomTemperatureControl {
+
+public @ContextService interface TemperatureControl extends ApplicationLayer {
 
 	public static class Availability {
 		
@@ -29,7 +30,4 @@ public interface RoomTemperatureControl {
     public static final  @State String APPLICATION_STATE ="application.state";
     Availability getAvailability();
     
-    public static final @State String APPLICATION_QOS="application.qos";
-    int getAppQoS();
-
 }

@@ -119,14 +119,8 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
     }
 
     @Override
-    public int getMinQos() {
-        return MIN_QOS;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        //return SrvQoS;
-        return 0;
+    public int getQoS() {
+        return 100;
     }
 
     @Override

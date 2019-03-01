@@ -6,8 +6,9 @@ import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.location.Zone;
-import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
-import fr.liglab.adele.interop.services.location.ZonesService;
+import fr.liglab.adele.interop.demonstrator.applications.temperature.TemperatureControlApplication;
+import fr.liglab.adele.iop.device.api.IOPService;
+
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Modified;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -23,12 +24,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 @ContextEntity(coreServices = {BalconyThermometerService.class, ServiceLayer.class})
 public class BalconyThermometerServiceImpl implements BalconyThermometerService, ServiceLayer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TemperatureControlApplication.class);
 
     private Map<String, String> outsideThermos = new HashMap<String, String>();
 
@@ -47,18 +47,16 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
 
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS, value = "0")
-    private int SrvQoS;
+    @Override
+    public String getServiceName() {
+        return name;
+    }
 
-    private static final Integer MIN_QOS = 34;
     private static final Integer OBJ_SIZE = 32;
 
     //REQUIREMENTS
 
-    @Requires(id = "zone", optional = false, specification = ZonesService.class)
-    ZonesService zones;
-
-    @Requires(id = "thermometer", optional = false, filter = "(& (locatedobject.object.zone=" + LocatedObject.LOCATION_UNKNOWN + ") (!(objectClass=fr.liglab.adele.iop.device.api.IOPService)) )", specification = ThermometerExt.class)
+    @Requires(id = "thermometer", optional = false, filter = "(& (locatedobject.object.zone=" + LocatedObject.LOCATION_UNKNOWN + ") (!"+IOPService.IS_IOP_SERVICE+" )", specification = ThermometerExt.class)
     @ContextRequirement(spec = LocatedObject.class)
     List<ThermometerExt> thermometers;
 
@@ -67,7 +65,6 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Bind(id = "thermometer")
     public void bindThermometer(ThermometerExt th) {
         LOG.info("(SRV) Balc: thermometer binded for a total of: " + thermometers.size());
-        SrvQoS = (thermometers.size() == 0) ? 0 : 100;
         updateState();
         serviceChange();
     }
@@ -75,7 +72,6 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Unbind(id = "thermometer")
     public void unbindThermometer(ThermometerExt th) {
         //set service state to false if no more thermometers
-        SrvQoS = (thermometers.size() == 0) ? 0 : 100;
         String valueToRemove="";
         List<String> toRemove=new ArrayList<>();;
 
@@ -98,7 +94,6 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
     @Modified(id = "thermometer")
     public void modifiedThermo(ThermometerExt th) {
        // LOG.debug("(SRV) Balc: thermometer moded for a total of: " + thermometers.size());
-        SrvQoS = (thermometers.size() == 0) ? 0 : 100;
         updateState();
         serviceChange();
     }
@@ -117,27 +112,9 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         return serviceChange;
     }
 
-    @ContextEntity.State.Pull(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
-    private Supplier<Integer> currentQos = () -> {
-        int currentQoS = (thermometers.size() == 0) ? 0 : 100;
-        return currentQoS;
-    };
-
-    //IMPLEMENTATION's FUNCTIONS
-
     @Override
-    public int getMinQos() {
-        return MIN_QOS;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        return SrvQoS;
-    }
-
-    @Override
-    public String getServiceName() {
-        return name;
+    public int getQoS() {
+        return (thermometers.size() == 0) ? 0 : 100;
     }
 
 
@@ -146,9 +123,12 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
         return srvChange;
     }
 
+    @Requires(optional=true, proxy=false)
+    private List<Zone> zones;
+    
     @Override
     public int getNumberOfZones() {
-        return zones.getZoneList().size();
+        return zones.size();
     }
 
     /**
@@ -185,7 +165,7 @@ public class BalconyThermometerServiceImpl implements BalconyThermometerService,
             outsideThermos.remove(zne);
             return "none";
         }
-        for (Zone zone : zones.getZoneList()) {
+        for (Zone zone : zones) {
             if (zone.getZoneName().equals(zne)) {
                 for (ThermometerExt Thr : thermometers) {
                     int Left = zone.getLeftTopAbsolutePosition().x - ((LocatedObject) Thr).getPosition().x + OBJ_SIZE;

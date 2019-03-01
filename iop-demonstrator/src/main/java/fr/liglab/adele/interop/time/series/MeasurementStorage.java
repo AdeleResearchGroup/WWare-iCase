@@ -13,7 +13,8 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 
-import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControl;
+import fr.liglab.adele.interop.services.shutter.ShutterController;
+import fr.liglab.adele.interop.services.temperature.TemperatureControl;
 import fr.liglab.adele.interop.time.series.influx.Database;
 
 import org.influxdb.dto.BatchPoints;
@@ -200,15 +201,16 @@ public class MeasurementStorage implements PeriodicRunnable {
 				tag("name", service.getServiceName()).
 				tag("type", "service").
 				tag("zone", zoneOf(service)).
-				addField("value", service.getServiceQoS()).
+				addField("value", service.getQoS()).
 				build()
 			);
 		}
 		
         for(ApplicationLayer application : applications) {
-    		if (application instanceof RoomTemperatureControl) {
+        	
+    		if (application instanceof TemperatureControl) {
 
-				RoomTemperatureControl.Availability availability = ((RoomTemperatureControl) application).getAvailability();
+				TemperatureControl.Availability availability = ((TemperatureControl) application).getAvailability();
     			points.point(
     				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
 					tag("type", "app").
@@ -233,6 +235,20 @@ public class MeasurementStorage implements PeriodicRunnable {
 					addField("value", availability.remotes.getValue().doubleValue()).
 					build()
     			);                
+    		}
+    		
+    		if (application instanceof ShutterController && application instanceof ZoneService) {
+    			
+    			double threshold = ((ShutterController) application).getThreshold();
+
+    			points.point(
+        				Measurement.ILLUMINANCE.at(timestamp, TimeUnit.NANOSECONDS).
+    					tag("name","ShutterController.threshold").
+    					tag("type", "app").
+    					tag("zone", ((ZoneService) application).getZone()).
+    					addField("value", threshold).
+    					build()
+        			);                
     		}
         }
 

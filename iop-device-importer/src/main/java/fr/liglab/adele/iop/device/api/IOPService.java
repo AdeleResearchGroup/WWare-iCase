@@ -7,6 +7,6 @@ public  @ContextService interface IOPService {
 
     public static  @State  String SERVICE_ID	= "iop.service.id";
 
-	public static final String isIOPService = "(objectClass=fr.liglab.adele.iop.device.api.IOPService)";
+	public static final String IS_IOP_SERVICE = "(objectClass=fr.liglab.adele.iop.device.api.IOPService)";
 
 }

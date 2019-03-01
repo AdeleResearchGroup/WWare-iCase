@@ -4,7 +4,7 @@ import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
-import fr.liglab.adele.interop.demonstrator.home.temperature.RoomTemperatureControlApp;
+import fr.liglab.adele.interop.demonstrator.applications.temperature.TemperatureControlApplication;
 import fr.liglab.adele.iop.device.api.IOPLookupService;
 import fr.liglab.adele.iop.device.api.IOPService;
 import org.apache.felix.ipojo.annotations.*;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 @ContextEntity(coreServices = {RemoteThermometerService.class, ServiceLayer.class})
 public class RemoteThermometerServiceImpl implements RemoteThermometerService, ServiceLayer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RoomTemperatureControlApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TemperatureControlApplication.class);
 
 
     boolean requestmade = false;
@@ -39,11 +39,6 @@ public class RemoteThermometerServiceImpl implements RemoteThermometerService, S
 
     @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.NAME)
     public String name;
-
-    @ContextEntity.State.Field(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS, value = "0")
-    private int AppQoS;
-
-    private static final Integer MIN_QOS = 34;
 
     //REQUIREMENTS
 
@@ -91,9 +86,8 @@ public class RemoteThermometerServiceImpl implements RemoteThermometerService, S
         return ServiceStatus;
     }
 
-
-    @ContextEntity.State.Pull(service = ServiceLayer.class, state = ServiceLayer.SERVICE_QOS)
-    private Supplier<Integer> currentQos = () -> {
+    @Override
+    public int getQoS() {
         int currentQoS = 0;
         if (thermometers.size() >= 1) {
             currentQoS = 100;
@@ -101,8 +95,7 @@ public class RemoteThermometerServiceImpl implements RemoteThermometerService, S
             currentQoS = 90;
         }
         return currentQoS;
-    };
-
+    }
 
     //IMPLEMENTATION's FUNCTIONS
     @Override
@@ -143,16 +136,6 @@ public class RemoteThermometerServiceImpl implements RemoteThermometerService, S
             temp = th.getTemperature();
         }
         return temp;
-    }
-
-    @Override
-    public int getMinQos() {
-        return MIN_QOS;
-    }
-
-    @Override
-    public int getServiceQoS() {
-        return AppQoS;
     }
 
     @Override

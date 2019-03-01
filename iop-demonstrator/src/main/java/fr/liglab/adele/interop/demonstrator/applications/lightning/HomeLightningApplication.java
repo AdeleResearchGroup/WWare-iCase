@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.demonstrator.home.lightning;
+package fr.liglab.adele.interop.demonstrator.applications.lightning;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.provider.Creator;
@@ -7,12 +7,16 @@ import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
+import fr.liglab.adele.icasa.physical.abstraction.MomentOfTheDay.PartOfTheDay;
 import fr.liglab.adele.interop.services.lightning.LightningService;
 import fr.liglab.adele.interop.services.lightning.LightningServiceImpl;
 import org.apache.felix.ipojo.annotations.Bind;
+import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
+import org.apache.felix.ipojo.annotations.ServiceProperty;
 import org.apache.felix.ipojo.annotations.Unbind;
+import org.apache.felix.service.command.Descriptor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,23 +29,17 @@ import java.util.Map;
 public class HomeLightningApplication implements ApplicationLayer {
 
 
-    //SERVICE's STATES
-
-    //IMPLEMENTATION's FUNCTIONS
-    public HomeLightningApplication() {
-    }
-
-    //REQUIREMENTS
     @Requires(id="lightningservices", specification = LightningService.class, optional=true)
     @ContextRequirement(spec = {ZoneService.class})
     private List<LightningService> services;
 
-    //CREATORS
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
 
     private @Creator.Field Creator.Entity<LightningServiceImpl>	serviceCreator;
 
-    //ACTIONS
+    @Requires(id="zones", specification=Zone.class, optional=true)
+    private List<Zone> zones;
+
     @Bind(id="zones",specification = Zone.class, aggregate = true, optional = true)
     public void bindZone(Zone zone) {
 
@@ -50,8 +48,8 @@ public class HomeLightningApplication implements ApplicationLayer {
         Map<String,Object> properties = new HashMap<>();
         properties.put(ContextEntity.State.id(ServiceLayer.class,ServiceLayer.NAME), instance);
 
-        serviceCreator.create(instance,properties);
         attacher.link(instance,zone);
+        serviceCreator.create(instance,properties);
     }
 
     @Unbind(id="zones")
@@ -59,15 +57,18 @@ public class HomeLightningApplication implements ApplicationLayer {
 
         String instance = zone.getZoneName()+".lightning";
 
-        serviceCreator.delete(instance);
         attacher.unlink(instance,zone);
+        serviceCreator.delete(instance);
     }
-    //FUNCTIONS
 
+    @Invalidate
+    private void stop() {
+    	for (Zone zone : zones) {
+			unbindZone(zone);
+		}
+    }
 
-
-
-  /*  @ServiceProperty(name = "osgi.command.scope", value = "home-lightning")
+    @ServiceProperty(name = "osgi.command.scope", value = "home-lightning")
     String commandScope;
 
     @ServiceProperty(name = "osgi.command.function", value = "{}")
@@ -86,13 +87,7 @@ public class HomeLightningApplication implements ApplicationLayer {
         	}
         }
         
-    }*/
+    }
 
-
-
-
-
-
- 
 
 }
