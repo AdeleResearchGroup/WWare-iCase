@@ -2,6 +2,7 @@ package fr.liglab.adele.interop.demonstrator;
 
 import org.apache.felix.ipojo.annotations.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -229,7 +230,15 @@ public class ApplicationManager implements PeriodicRunnable, ServiceRankingInter
 	private String targetDependency;
 
 
-	private static final boolean isRemote(ServiceReference<?> reference) {
+	@Override
+	public void open(DependencyModel dependency) {
+	}
+
+	@Override
+	public void close(DependencyModel dependency) {
+	}
+
+	public static final <S> boolean isRemote(ServiceReference<S> reference) {
 		String[] services = (String[]) reference.getProperty(Constants.OBJECTCLASS);
 		for (String service : services) {
 			if (service.contains(IOPService.class.getCanonicalName())) {
@@ -240,38 +249,29 @@ public class ApplicationManager implements PeriodicRunnable, ServiceRankingInter
 		return false;
 	}
 
+	public static final <S> int getQualityOfService(ServiceReference<S> reference) {
+		return isRemote(reference) ? 0 : 100;
+	}
+
+	public static final <S> Comparator<ServiceReference<S>> ranking() {
+		return Comparator.comparingInt(ApplicationManager::<S>getQualityOfService).reversed().thenComparing(Comparator.naturalOrder());
+	} 
+
+	@SuppressWarnings("unchecked")
+	private static final <S, R extends ServiceReference<S>> Comparator<R> raw(Comparator<ServiceReference<S>> comparator) {
+		return (Comparator<R> ) comparator;
+	} 
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static final Comparator<ServiceReference> RANKING = raw(ranking());
 	
-	@SuppressWarnings("rawtypes")
-	public static class Ranking implements Comparator<ServiceReference> {
-
-
-    	@Override
-		public int compare(ServiceReference first, ServiceReference second) {
-			
-			boolean firstIsRemote 	= isRemote(first);
-			boolean secondIsRemote 	= isRemote(second);
-			
-			return 	firstIsRemote && !secondIsRemote ? +1 :
-		    		!firstIsRemote && secondIsRemote ? -1 :
-		    		first.compareTo(second);
-			
-		}
-    	
-    }
-
-	@Override
-	public void open(DependencyModel dependency) {
-	}
-
-	@Override
-	public void close(DependencyModel dependency) {
-	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
-	public List<ServiceReference> getServiceReferences(DependencyModel dependency, List<ServiceReference> matching) {
-		matching.sort(new Ranking());
-		return matching;
+	public  List<ServiceReference> getServiceReferences(DependencyModel dependency, List<ServiceReference> matching) {
+		List<ServiceReference> sorted = new ArrayList<>(matching);
+		sorted.sort(RANKING);
+		return sorted;
 	}
 
 	@Override

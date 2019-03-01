@@ -37,7 +37,7 @@ public class ShutterControllerApplication implements ApplicationLayer, ShutterCo
     @ContextRequirement(spec = {LocatedObject.class})
     private WindowShutter[] shutters;
 
-    private double threshold = 1600;
+    private double threshold = 400;
     
     @Override
 	public double getThreshold() {
@@ -60,10 +60,13 @@ public class ShutterControllerApplication implements ApplicationLayer, ShutterCo
     	control();
     }
 
+    private final static double OPEN 	= 1d;
+    private final static double CLOSED 	= 0d;
+
     private void control() {
 
     	double currentLuminosity = photometer.getIlluminance().to(Units.LUX).getValue().doubleValue();
-		double shutterLevel 	=  currentLuminosity <= threshold ? 0d : 1d;
+		double shutterLevel 	=  currentLuminosity <= threshold ? CLOSED : OPEN;
 		
 		for (WindowShutter	shutter : shutters) {
 			shutter.setShutterLevel(shutterLevel);
