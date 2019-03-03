@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;

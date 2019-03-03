@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.dataManip;
+package fr.liglab.adele.interop.services.legacy.temperature.dataManip;
 /**
 * Small, easy to use PID implementation with advanced controller capability.<br> 
 * Minimal usage:<br>

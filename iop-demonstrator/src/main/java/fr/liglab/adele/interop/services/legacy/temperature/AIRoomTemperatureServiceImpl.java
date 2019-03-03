@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import java.util.concurrent.TimeUnit;
 

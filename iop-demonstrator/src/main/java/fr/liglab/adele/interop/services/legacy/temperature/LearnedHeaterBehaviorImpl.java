@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import fr.liglab.adele.icasa.device.temperature.Heater;
 import fr.liglab.adele.icasa.device.temperature.ThermometerExt;

@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.demonstrator.applications.temperature;
+package fr.liglab.adele.interop.demonstrator.applications.legacy.temperature;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.provider.Creator;
@@ -9,8 +9,18 @@ import fr.liglab.adele.icasa.layering.applications.api.ApplicationLayer;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 import fr.liglab.adele.icasa.location.Zone;
-import fr.liglab.adele.interop.services.dataManip.pidService;
-import fr.liglab.adele.interop.services.dataManip.pidServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.dataManip.pidService;
+import fr.liglab.adele.interop.services.legacy.temperature.dataManip.pidServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.AIRoomTemperatureServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.BalconyThermometerService;
+import fr.liglab.adele.interop.services.legacy.temperature.BalconyThermometerServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.LearnedHeaterBehavior;
+import fr.liglab.adele.interop.services.legacy.temperature.LearnedHeaterBehaviorImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.RemoteThermometerService;
+import fr.liglab.adele.interop.services.legacy.temperature.RemoteThermometerServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.RoomThermometerService;
+import fr.liglab.adele.interop.services.legacy.temperature.RoomThermometerServiceImpl;
+import fr.liglab.adele.interop.services.legacy.temperature.TemperatureControl;
 import fr.liglab.adele.interop.services.temperature.*;
 import fr.liglab.adele.interop.time.series.MeasurementStorage;
 

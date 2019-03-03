@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import fr.liglab.adele.cream.annotations.ContextService;
 import fr.liglab.adele.cream.annotations.State;

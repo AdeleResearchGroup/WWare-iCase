@@ -1,14 +1,11 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import fr.liglab.adele.cream.annotations.ContextService;
 import fr.liglab.adele.cream.annotations.State;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 
-import javax.measure.Quantity;
-import javax.measure.quantity.Temperature;
-
 @ContextService
-public interface RoomThermometerService extends ServiceLayer {
+public interface LearnedHeaterBehavior extends ServiceLayer {
     @State
     String SERVICE_STATUS = "service.status";
     @State
@@ -16,5 +13,5 @@ public interface RoomThermometerService extends ServiceLayer {
 
     String getServiceStatus();
 
-    Double getTemperature();
+    double getHeaterPorcentage(double reference, double target, String zone, int iterationsPerDay);
 }

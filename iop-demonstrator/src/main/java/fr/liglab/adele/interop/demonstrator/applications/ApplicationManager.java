@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.demonstrator;
+package fr.liglab.adele.interop.demonstrator.applications;
 
 import org.apache.felix.ipojo.annotations.*;
 

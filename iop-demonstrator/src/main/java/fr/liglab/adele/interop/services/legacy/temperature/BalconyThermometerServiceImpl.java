@@ -1,4 +1,4 @@
-package fr.liglab.adele.interop.services.temperature;
+package fr.liglab.adele.interop.services.legacy.temperature;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.facilities.ipojo.annotation.ContextRequirement;
@@ -6,7 +6,7 @@ import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
 import fr.liglab.adele.icasa.layering.services.api.ServiceLayer;
 import fr.liglab.adele.icasa.location.LocatedObject;
 import fr.liglab.adele.icasa.location.Zone;
-import fr.liglab.adele.interop.demonstrator.applications.temperature.TemperatureControlApplication;
+import fr.liglab.adele.interop.demonstrator.applications.legacy.temperature.TemperatureControlApplication;
 import fr.liglab.adele.iop.device.api.IOPService;
 
 import org.apache.felix.ipojo.annotations.Bind;

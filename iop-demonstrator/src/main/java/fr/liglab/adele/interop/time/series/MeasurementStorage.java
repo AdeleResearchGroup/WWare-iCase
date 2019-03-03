@@ -14,7 +14,7 @@ import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Validate;
 
 import fr.liglab.adele.interop.services.shutter.ShutterController;
-import fr.liglab.adele.interop.services.temperature.TemperatureControl;
+import fr.liglab.adele.interop.services.temperature.TemperatureController;
 import fr.liglab.adele.interop.time.series.influx.Database;
 
 import org.influxdb.dto.BatchPoints;
@@ -208,35 +208,20 @@ public class MeasurementStorage implements PeriodicRunnable {
 		
         for(ApplicationLayer application : applications) {
         	
-    		if (application instanceof TemperatureControl) {
+     		if (application instanceof TemperatureController && application instanceof ZoneService) {
+    			
+    			double threshold = ((TemperatureController) application).getReference().to(Units.KELVIN).getValue().doubleValue();
 
-				TemperatureControl.Availability availability = ((TemperatureControl) application).getAvailability();
     			points.point(
-    				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
-					tag("type", "app").
-					tag("zone", "ALL").
-					tag("sub","Heaters").
-					addField("value", availability.heaters.getValue().doubleValue()).
-					build()
-    			);                
-    			points.point(
-    				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
-					tag("type", "app").
-					tag("zone", "ALL").
-					tag("sub","localThermos").
-					addField("value", availability.locals.getValue().doubleValue()).
-					build()
-    			);                
-    			points.point(
-    				Measurement.COVERAGE.at(timestamp, TimeUnit.NANOSECONDS).
-					tag("type", "app").
-					tag("zone", "ALL").
-					tag("sub","ExternalThermos").
-					addField("value", availability.remotes.getValue().doubleValue()).
-					build()
-    			);                
+        				Measurement.TEMPERATURE.at(timestamp, TimeUnit.NANOSECONDS).
+    					tag("name","TemperatureController.reference").
+    					tag("type", "app").
+    					tag("zone", ((ZoneService) application).getZone()).
+    					addField("value", threshold).
+    					build()
+        			);                
     		}
-    		
+
     		if (application instanceof ShutterController && application instanceof ZoneService) {
     			
     			double threshold = ((ShutterController) application).getThreshold();

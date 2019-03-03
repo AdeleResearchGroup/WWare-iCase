@@ -18,7 +18,9 @@ package fr.liglab.adele.interop;
 import org.apache.felix.ipojo.configuration.Configuration;
 import org.apache.felix.ipojo.configuration.Instance;
 
-import fr.liglab.adele.interop.demonstrator.ApplicationManager;
+import fr.liglab.adele.interop.demonstrator.applications.ApplicationManager;
+import fr.liglab.adele.interop.demonstrator.applications.temperature.AutonomicManager;
+
 import fr.liglab.adele.interop.iop.publisher.LocatedObjectPublisher;
 import fr.liglab.adele.interop.time.series.MeasurementStorage;
 
@@ -30,6 +32,9 @@ public class Setup {
 
     Instance manager = instance().named("Interop-ApplicationManager")
             .of(ApplicationManager.class.getCanonicalName());
+
+    Instance specialManager = instance().named("Interop-TemperatureApplicationManager")
+            .of(AutonomicManager.class.getCanonicalName());
 
 	Instance icasaPublisher = instance().named("iCasaPublisher")
             .of(LocatedObjectPublisher.class.getCanonicalName());
