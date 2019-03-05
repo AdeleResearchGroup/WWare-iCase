@@ -36,9 +36,12 @@ public class Setup {
     Instance specialManager = instance().named("Interop-TemperatureApplicationManager")
             .of(AutonomicManager.class.getCanonicalName());
 
+    /*
+     * TODO FIX ERROR WHEN EXPORTING HEATER 
+     *
 	Instance icasaPublisher = instance().named("iCasaPublisher")
             .of(LocatedObjectPublisher.class.getCanonicalName());
-
+	*/
     Instance measurementStrorage = instance().named("TimeSeriesStorage")
             .of(MeasurementStorage.class.getCanonicalName());
 
