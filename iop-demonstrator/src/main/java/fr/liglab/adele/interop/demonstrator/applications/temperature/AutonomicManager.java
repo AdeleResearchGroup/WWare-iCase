@@ -60,32 +60,34 @@ public class AutonomicManager {
     
     /**
      * We keep track of the zones in the home and create a new controller for each zone with at least
-     * one shutter
+     * one heater
      */
 
     private @Creator.Field(ZoneService.RELATION_ATTACHED_TO) Creator.Relation<ZoneService,Zone> attacher;
     private @Creator.Field Creator.Entity<TemperatureControllerApplication> controllerCreator;
+    private @Creator.Field Creator.Entity<TemperatureOpenControllerApplication> openControllerCreator;
 
     private void addController(String zone) {
 
     	String controllerId = "TemperatureController."+zone;
-    	if (controllerCreator.getInstance(controllerId) != null) {
+    	if (openControllerCreator.getInstance(controllerId) != null) {
     		return;
     	}
     	
 		Map<String,Object> properties = new HashMap<>();
-		controllerCreator.create(controllerId,properties);
+		openControllerCreator.create(controllerId,properties);
         attacher.link(controllerId,zone);
+
     } 
 
     private void removeController(String zone) {
     	
     	String controllerId = "TemperatureController."+zone;
-    	if (controllerCreator.getInstance(controllerId) == null) {
+    	if (openControllerCreator.getInstance(controllerId) == null) {
     		return;
     	}
 
-    	controllerCreator.delete(controllerId);
+    	openControllerCreator.delete(controllerId);
         attacher.unlink(controllerId,zone);
     }
 

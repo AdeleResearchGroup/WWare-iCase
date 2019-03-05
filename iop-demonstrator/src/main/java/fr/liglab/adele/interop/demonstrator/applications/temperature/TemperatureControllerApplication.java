@@ -44,8 +44,8 @@ public class TemperatureControllerApplication implements ApplicationLayer, Tempe
     @ContextRequirement(spec = {LocatedObject.class})
     private Heater[] heaters;
 
-    @Unbind
-    private void undoundHeater(Heater heater) {
+    @Unbind(id="heater")
+    private void unboundHeater(Heater heater) {
     	heater.setPowerLevel(0);
     }
     
@@ -97,7 +97,7 @@ public class TemperatureControllerApplication implements ApplicationLayer, Tempe
         double output 		= pid.getOutput(actual);
         
         System.err.printf("Target\tActual\tOutput\tError\n");
-        System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f\n", reference, actual, output, (reference-actual));
+        System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f %s\n", reference, actual, output, (reference-actual), output > 0 &&  Math.signum(reference-actual) < 0 ? "****" : "");
         
         double level		= output / heaters.length;
 		for (Heater	heater : heaters) {
