@@ -16,9 +16,8 @@
 package fr.liglab.adele.iop.device.proxies;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,7 +91,6 @@ import de.mannheim.wifo2.iop.service.model.impl.Operator;
 import de.mannheim.wifo2.iop.util.i.IEnqueue;
 import de.mannheim.wifo2.xware.plugin.RosePlugin;
 import de.mannheim.wifo2.iop.util.PluginConstants;
-import de.mannheim.wifo2.iop.util.datastructure.Queue;
 
 import fr.liglab.adele.iop.device.api.IOPController;
 import fr.liglab.adele.iop.device.api.IOPInvocationHandler;
@@ -108,7 +106,7 @@ import fr.liglab.adele.iop.device.importer.ServiceDeclaration;
 public class ControllerImpl extends AbstractDiscoveryComponent
 		implements IOPController, IOPInvocationHandler, IOPLookupService, IOPPublisher, IMediator, Runnable {
 
-	private static final boolean EVALUATION = true;
+	private static final boolean EVALUATION = false;
 
 	private static final Logger LOG = LoggerFactory.getLogger(ControllerImpl.class);
 
@@ -120,7 +118,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	private RosePlugin rosePlugin;
 	private Thread mThread;
-	private Queue<IEvent> mQueue;
+	private BlockingQueue<IEvent> mQueue;
 	private boolean mIsRunning;
 
 	private ILocalServiceID myServiceId;
@@ -169,7 +167,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		 * If no response expected, just return to the caller
 		 */
 		if (!call.expectsResult()) {
-			mQueue.enqueue(invocation);
+			mQueue.offer(invocation);
 			return null;
 		}
 
@@ -179,7 +177,7 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		 * 
 		 */
 		pendingInvocations.put(eventId, invocation);
-		mQueue.enqueue(invocation);
+		mQueue.offer(invocation);
 
 		if (pendingInvocations.containsKey(eventId)) {
 			synchronized (invocation) {
@@ -328,13 +326,14 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 		importManager = new IOPServiceDeclarationManager((int) properties.get(PluginConstants.LEASE_TIMEOUT));
 		importManager.start();
 
-		mIsRunning = false;
-		mQueue = new Queue<IEvent>();
+		mIsRunning	= false;
+		mQueue		= new LinkedBlockingQueue<>();
 
-		mThread = new Thread(this, "IOPControlller-Runner");
+		mThread		 = new Thread(this, "IOPController-Runner");
 		mThread.setDaemon(true);
 		mThread.start();
-		mIsRunning = true;
+		
+		mIsRunning 	= true;
 
 		rosePlugin = new RosePlugin("iCasa over IOP", this, properties);
 		rosePlugin.start();
@@ -363,166 +362,186 @@ public class ControllerImpl extends AbstractDiscoveryComponent
 
 	@Override
 	public void enqueue(IEvent message) {
-		mQueue.enqueue(message);
+		mQueue.offer(message);
 	}
 
-	@Override
-	public void run() {
-		PrintWriter writer = null;
-		try {
-			writer = new PrintWriter(System.getProperty("user.home") + File.separator + "iCasa-log"
-					+ System.currentTimeMillis() + ".txt", "UTF-8");
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
+	private static class Profiler {
+	
+		private final PrintWriter output;
+		
+		private Profiler(boolean enabled) {
+			this.output = enabled ? output() : null;
 		}
 
+		private static PrintWriter output() {
+			try {
+				return new PrintWriter(System.getProperty("user.home") + File.separator + "iCasa-log"
+							+ System.currentTimeMillis() + ".txt", "UTF-8");
+			} 
+			catch (IOException unexpected) {
+				unexpected.printStackTrace();
+				return null;
+			}
+			
+		}
+
+		public void invocation(IApplicationEvent invocation) {
+			if (output != null) {
+				output.print(System.nanoTime());
+			}
+		}
+
+		public void response(IApplicationResponseEvent response) {
+			if (output != null) {
+				output.println("\t" + System.nanoTime());
+				output.flush();
+			}
+		}
+	}
+	
+	@Override
+	public void run() {
+		
+		Profiler profiler = new Profiler(EVALUATION);
 		while (mIsRunning) {
-			if (!mQueue.isEmpty()) {
-				IEvent event = mQueue.dequeue();
+			try {
+				process(mQueue.take(),profiler);
+			} catch (Throwable unexpected) {
+				unexpected.printStackTrace();
+			}
+		}
+				
+	}
+	
+	public void process(IEvent event, Profiler profiler) throws Throwable {
 
-				switch (event.getType()) {
+		switch (event.getType()) {
 
-				case IEvent.EVENT_LOOKUPRESPONSE: {
-					if (importManager != null) {
-						importManager.dispatch((ILookupResponseEvent) event);
-					}
-					break;
-				}
+		case IEvent.EVENT_LOOKUPRESPONSE: {
+			if (importManager != null) {
+				importManager.dispatch((ILookupResponseEvent) event);
+			}
+			break;
+		}
 
-				case IEvent.EVENT_ANNOUNCEMENT: {
-					IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
+		case IEvent.EVENT_ANNOUNCEMENT: {
+			IAnnouncementEvent announcementEvent = (IAnnouncementEvent) event;
 
-					/*
-					 * Send back my lookup requests
-					 */
-					IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
-							IInteraction.INTERACTION_CS);
+			/*
+			 * Send back my lookup requests
+			 */
+			IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
+					IInteraction.INTERACTION_CS);
 
-					if (lookupRequests.isEmpty()) {
-						ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-								(IEndpointID) rosePlugin.getID().getDeviceID(),
-								(IEndpointID) announcementEvent.getSourceID(), new SimpleMatchRequest(new String[0]));
+			if (lookupRequests.isEmpty()) {
+				ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+						(IEndpointID) rosePlugin.getID().getDeviceID(), (IEndpointID) announcementEvent.getSourceID(),
+						new SimpleMatchRequest(new String[0]));
 
-						lookupEvent.setReadyToSend(true);
-						rosePlugin.enqueue(lookupEvent);
+				lookupEvent.setReadyToSend(true);
+				rosePlugin.enqueue(lookupEvent);
 
-					} else {
-						for (IMatchRequest lookupRequest : lookupRequests) {
-
-							ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
-									(IEndpointID) rosePlugin.getID().getDeviceID(),
-									(IEndpointID) announcementEvent.getSourceID(), lookupRequest);
-
-							lookupEvent.setReadyToSend(true);
-							rosePlugin.enqueue(lookupEvent);
-						}
-					}
-
-					break;
-				}
-
-				case IEvent.EVENT_LOOKUP: {
-					ILookupEvent lookupEvent = (ILookupEvent) event;
-
-					// incoming
-					if (rosePlugin != null && !lookupEvent.getTargetID().equals(rosePlugin.getID())) {
-						/*
-						 * Send response with exported services
-						 */
-						List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
-
-						IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
-								IInteraction.INTERACTION_CS);
-
-						ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService, lookupEvent.getID(),
-								(IEndpointID) lookupEvent.getTargetID(), (IEndpointID) lookupEvent.getSourceID(),
-								matchedServices);
-
-						responseEvent.setReadyToSend(true);
-						rosePlugin.enqueue(responseEvent);
-					}
-
-					break;
-				}
-
-				case IEvent.EVENT_APPLICATION: {
-					IApplicationEvent invocation = (IApplicationEvent) event;
-					// incoming
-					if (rosePlugin != null && invocation.getSource().equals(rosePlugin.getID())) {
-
-						IServiceDescription service = new LocalService((ILocalServiceID) invocation.getTargetID(), null,
-								Collections.emptyList(), Collections.emptyList());
-						IOPInvocationHandler handler = exportedServices.get(service);
-
-						Object result = null;
-
-						if (handler != null) {
-							try {
-
-								result = handler.invoke((IServiceID) invocation.getTargetID(), invocation.getCall(),
-										IOPInvocationHandler.TIMEOUT);
-
-							} catch (TimeoutException e) {
-								result = null;
-							}
-						}
-
-						if (result != null) {
-							PluginID componentId = new PluginID("ApplicationResponseEventGenerator",
-									rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
-							ICall call = new Call(null,
-									Collections.singletonList(new Parameter("result", result, null)), null);
-							IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(componentId,
-									invocation.getID(), (IServiceID) invocation.getTargetID(),
-									(IServiceID) invocation.getSourceID(), call,
-									new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE));
-							rosePlugin.enqueue(responseEvent);
-
-						}
-
-					}
-					// outgoing
-					else {
-						invocation.setReadyToSend(true);
-
-						if (EVALUATION) {
-							writer.print(System.nanoTime());
-						}
-						rosePlugin.getConnectionManager().send(invocation);
-					}
-					break;
-				}
-
-				case IEvent.EVENT_APPLICATIONRESPONSE: {
-					IApplicationResponseEvent response = (IApplicationResponseEvent) event;
-					// incoming
-					if (rosePlugin != null && response.getSource().equals(rosePlugin.getID())) {
-						if (EVALUATION) {
-							writer.println("\t" + System.nanoTime());
-							writer.flush();
-						}
-						invocationResponse(response);
-					} else {
-						event.setReadyToSend(true);
-						rosePlugin.getConnectionManager().send(event);
-					}
-					break;
-				}
-
-				case IEvent.EVENT_EVENTING: {
-					break;
-				}
-
-				}
 			} else {
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				for (IMatchRequest lookupRequest : lookupRequests) {
+
+					ILookupEvent lookupEvent = new LookupEvent(lookupService, EventID.getInstance().getNextID(),
+							(IEndpointID) rosePlugin.getID().getDeviceID(),
+							(IEndpointID) announcementEvent.getSourceID(), lookupRequest);
+
+					lookupEvent.setReadyToSend(true);
+					rosePlugin.enqueue(lookupEvent);
 				}
 			}
+
+			break;
+		}
+
+		case IEvent.EVENT_LOOKUP: {
+			ILookupEvent lookupEvent = (ILookupEvent) event;
+
+			// incoming
+			if (rosePlugin != null && !lookupEvent.getTargetID().equals(rosePlugin.getID())) {
+				/*
+				 * Send response with exported services
+				 */
+				List<? extends IServiceDescription> matchedServices = new Vector<>(exportedServices.keySet());
+
+				IComponentID lookupService = new PluginID("LookupService", rosePlugin.getID().getDeviceID(),
+						IInteraction.INTERACTION_CS);
+
+				ILookupResponseEvent responseEvent = new LookupResponseEvent(lookupService, lookupEvent.getID(),
+						(IEndpointID) lookupEvent.getTargetID(), (IEndpointID) lookupEvent.getSourceID(),
+						matchedServices);
+
+				responseEvent.setReadyToSend(true);
+				rosePlugin.enqueue(responseEvent);
+			}
+
+			break;
+		}
+
+		case IEvent.EVENT_APPLICATION: {
+			IApplicationEvent invocation = (IApplicationEvent) event;
+			// incoming
+			if (rosePlugin != null && invocation.getSource().equals(rosePlugin.getID())) {
+
+				IServiceDescription service = new LocalService((ILocalServiceID) invocation.getTargetID(), null,
+						Collections.emptyList(), Collections.emptyList());
+				IOPInvocationHandler handler = exportedServices.get(service);
+
+				Object result = null;
+
+				if (handler != null) {
+					try {
+
+						result = handler.invoke((IServiceID) invocation.getTargetID(), invocation.getCall(),
+								IOPInvocationHandler.TIMEOUT);
+
+					} catch (TimeoutException e) {
+						result = null;
+					}
+				}
+
+				if (result != null) {
+					PluginID componentId = new PluginID("ApplicationResponseEventGenerator",
+							rosePlugin.getID().getDeviceID(), IInteraction.INTERACTION_CS);
+					ICall call = new Call(null, Collections.singletonList(new Parameter("result", result, null)), null);
+					IApplicationResponseEvent responseEvent = new ApplicationResponseEvent(componentId,
+							invocation.getID(), (IServiceID) invocation.getTargetID(),
+							(IServiceID) invocation.getSourceID(), call,
+							new Interaction(IInteraction.SEMANTICS_CS_REQUEST_RESPONSE));
+					rosePlugin.enqueue(responseEvent);
+
+				}
+
+			}
+			// outgoing
+			else {
+				invocation.setReadyToSend(true);
+
+				profiler.invocation(invocation);
+				rosePlugin.getConnectionManager().send(invocation);
+			}
+			break;
+		}
+
+		case IEvent.EVENT_APPLICATIONRESPONSE: {
+			IApplicationResponseEvent response = (IApplicationResponseEvent) event;
+			// incoming
+			if (rosePlugin != null && response.getSource().equals(rosePlugin.getID())) {
+				profiler.response(response);
+				invocationResponse(response);
+			} else {
+				event.setReadyToSend(true);
+				rosePlugin.getConnectionManager().send(event);
+			}
+			break;
+		}
+
+		case IEvent.EVENT_EVENTING: {
+			break;
+		}
+
 		}
 	}
 
