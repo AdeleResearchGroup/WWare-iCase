@@ -78,8 +78,8 @@ public class AIRoomTemperatureServiceImpl implements RoomTemperatureService, Ser
     
     public QueryResult averageValues(String start, int lowerLimit, int upperLimit) {
     	
-    	String since = since(expression(quoted(start,true), "-", duration(lowerLimit, TimeUnit.DAYS)));
-    	String until = until(expression(quoted(start,true), "+", duration(upperLimit, TimeUnit.DAYS)));
+    	String since = since(expression(quoted(start,true), "-", time(lowerLimit, TimeUnit.DAYS)));
+    	String until = until(expression(quoted(start,true), "+", time(upperLimit, TimeUnit.DAYS)));
     	
     	return database.select(MEAN.of("*"),"Temp", 5, since, until);
     } 

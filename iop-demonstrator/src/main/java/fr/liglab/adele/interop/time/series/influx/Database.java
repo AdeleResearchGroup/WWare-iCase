@@ -135,6 +135,32 @@ public class Database {
 		return maybe(series.get(0).getValues());
 	}
 
+	/**
+	 * A specific value in the first series of the first result
+	 * 
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T valueAt(QueryResult result, int row, int column, T orElse) {
+		
+		List<List<Object>> values = values(result);
+		
+		if (values.isEmpty()) {
+			return orElse;
+		}
+		
+		List<Object> rowValue = values.get(row);
+		
+		if (rowValue == null || rowValue.isEmpty() || column >= rowValue.size()) {
+			return orElse;
+		}
+		
+		return  (T) rowValue.get(column);
+	}
+
+	public static <T> T valueAt(QueryResult result, int row, int column) {
+		return valueAt(result, row, column, null);
+	}
+	
 	public static String timestamp(List<Object> row) {
 		return row != null && ! row.isEmpty() ? (String) first(row) : null;
 	}
@@ -375,8 +401,12 @@ public class Database {
 		return weeks+"w";
 	}
 
-	public static String duration(long time, TimeUnit unit) {
+	public static String time(long time, TimeUnit unit) {
 		return time+suffix(unit);
+	}
+
+	public static String time(String timestamp) {
+		return quoted(timestamp,true);
 	}
 
 	private static String suffix(TimeUnit unit) {
