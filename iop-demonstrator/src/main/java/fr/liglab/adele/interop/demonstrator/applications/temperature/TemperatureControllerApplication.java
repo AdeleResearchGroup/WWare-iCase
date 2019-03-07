@@ -9,6 +9,7 @@ import tec.units.ri.unit.Units;
 
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.BindingPolicy;
+import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Unbind;
 import org.apache.felix.ipojo.annotations.Validate;
@@ -47,6 +48,15 @@ public class TemperatureControllerApplication implements ApplicationLayer, Tempe
     @Unbind(id="heater")
     private void unboundHeater(Heater heater) {
     	heater.setPowerLevel(0);
+    }
+    
+    @Invalidate
+    private void stop() {
+    	if (heaters != null) {
+    		for (Heater heater : heaters) {
+    			heater.setPowerLevel(0);
+			}
+    	}
     }
     
     /**

@@ -216,7 +216,7 @@ public class ApplicationManager implements PeriodicRunnable, ServiceRankingInter
 		boolean allActive = controllerCreator.identifiers().equals(validIds);
 		
 		if (!allActive && !lookupRequested) {
-			System.out.println("Requersting IOP services");
+			System.out.println("Requesting IOP services");
 			lookup.consider(LOOKUP_SERVICES, Collections.emptyMap());
 			lookupRequested = true;
 		}
