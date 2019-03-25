@@ -4,6 +4,7 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Temperature;
 
 import java.util.concurrent.TimeUnit;
+
 import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.Units;
 
@@ -11,7 +12,6 @@ import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.Unbind;
 import org.apache.felix.ipojo.annotations.Validate;
-import org.joda.time.DateTime;
 
 import fr.liglab.adele.cream.annotations.entity.ContextEntity;
 import fr.liglab.adele.cream.annotations.functional.extension.FunctionalExtension;
@@ -24,11 +24,24 @@ import fr.liglab.adele.icasa.layering.services.location.ZoneServiceFunctionalExt
 import fr.liglab.adele.icasa.location.LocatedObject;
 
 import fr.liglab.adele.interop.services.temperature.TemperatureController;
-import fr.liglab.adele.iop.device.api.IOPService;
+
+import fr.liglab.adele.interop.time.series.MeasurementStorage;
+import static fr.liglab.adele.interop.time.series.MeasurementStorage.Measurement.*;
+
+import fr.liglab.adele.interop.time.series.influx.Database;
+import static fr.liglab.adele.interop.time.series.influx.Database.*;
+import static fr.liglab.adele.interop.time.series.influx.Database.Function.*;
+
+import org.influxdb.dto.QueryResult;
+import org.joda.time.DateTime;
+
+
 import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
 import fr.liglab.adele.icasa.clockservice.Clock;
+
 import fr.liglab.adele.icasa.device.temperature.Heater;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
+import fr.liglab.adele.iop.device.api.IOPService;
 import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
 
 @ContextEntity(coreServices = {ApplicationLayer.class, TemperatureController.class, PeriodicRunnable.class})
@@ -96,21 +109,22 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     	double external = reference;
     	
     	if (outside != null) {
-            System.err.printf("Target\tOutside\tOutput\tError\n");
+//            System.err.printf("Target\tOutside\tOutput\tError\n");
     		external = outside.getTemperature().getValue().doubleValue();
     	} else if (building != null) {
-            System.err.printf("Target\tBuilding\tOutput\tError\n");
+//            System.err.printf("Target\tBuilding\tOutput\tError\n");
     		external = building.getTemperature().getValue().doubleValue();
     	}
     	else {
-            System.err.printf("Target\tHistorical\tOutput\tError\n");
+//            System.err.printf("Target\tHistorical\tOutput\tError\n");
+            external = getRecordedTemperature(time);
             return;
     	}
     	
     	
         double output = estimate(external, reference, time);
         
-        System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f %s \n", reference, external, output, (reference-external), output > 0 &&  Math.signum(reference-external) < 0 ? "****" : "");
+//      System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f %s \n", reference, external, output, (reference-external), output > 0 &&  Math.signum(reference-external) < 0 ? "****" : "");
         
         double level = output / heaters.length;
 		for (Heater	heater : heaters) {
@@ -122,6 +136,9 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     private DateTime currentDay;
     private int activeSlots;
     
+    /**
+     * A regression based estimation of the output based on the input variables (external temperature and time)
+     */
     private double estimate(double external, double reference, DateTime time) {
 
     	int totalSlots = slots();
@@ -174,8 +191,7 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     }
     
     /**
-     * The slot number corresponding to a time of day. We renumber the slots so that idle time is spread
-     * over the whole day. 
+     * The slot number corresponding to a time of day.
      * 
      * Notice we make all the calculation with a precision of minutes, as we suppose that the estimation
      * period is between a minute and a day. 
@@ -185,6 +201,9 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     	int total	= slots();
     	int slot 	= (int)  (time.getMinuteOfDay() / TimeUnit.MINUTES.convert(getPeriod(),getUnit()));
     	
+    	 /* 
+    	  * We renumber the slots (first even then odd) so that active time is spread over the whole day  
+    	  */
     	if (slot %2 == 0) {
     		slot = slot / 2;
     	}
@@ -204,7 +223,11 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     
     @Override
 	public void run() {
-		control(new DateTime(clock.currentTimeMillis()));
+    	try {
+    		control(new DateTime(clock.currentTimeMillis()));
+		} catch (Exception unexpected) {
+			unexpected.printStackTrace();
+		}
 	}
 	
 	@Override
@@ -232,5 +255,105 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     	reset();
     }
 
+    /**
+     * Learning algorithm
+     */
+    @Requires(optional = false, proxy=false)
+    private MeasurementStorage storage;
+    
+    private final Database historicData = new Database("mLearning");
+
+    private QueryResult referenceYear = null;
+    private double lowerMultiplier = 1;
+    private double higherAdder = 0;
+     
+    /**
+     * Based on a simple temperature model it returns the estimated temperature in a day
+     */
+    public double getRecordedTemperature(DateTime time) {
+
+    	DateTime today = time.withTimeAtStartOfDay();
+
+    	/*
+    	 * Calculate the closer (most alike) year in the historic data to this year
+    	 */
+    	if (referenceYear == null) {
+    		
+            //get the date from the latest available temperature
+            QueryResult lastMeasured 	= storage.select(TEMPERATURE, LAST, since(today.minusYears(5)), until(today));
+            String timeOfLastMeasure	= timestamp(lastMeasured);
+            
+            if (timeOfLastMeasure != null) {
+            	
+	            //get that temperature
+	            double LastTemperature = measure(lastMeasured, 1, 0.0d);
+	
+	
+	            //With that date, get the max and min temperatures in the day
+	            QueryResult lastMin = storage.select(TEMPERATURE, MIN, since(timeOfLastMeasure), until(expression(time(timeOfLastMeasure),"+",time(1,TimeUnit.DAYS))));
+	            QueryResult lastMax = storage.select(TEMPERATURE, MAX, since(timeOfLastMeasure), until(expression(time(timeOfLastMeasure),"+",time(1,TimeUnit.DAYS))));
+	            
+	            double lastMaximum = measure(lastMax, 1, 0.0d);
+	            double lastMinimum = measure(lastMin, 1, 0.0d);
+	
+	
+	            //compare to the temperatures for last 4 years at the same date
+	            
+	            double closestResemblance = Double.MAX_VALUE;
+	            
+	            for (int years = 1; years < 5; years++) {
+	            	QueryResult reference = historicData.select(MEAN.of("*"), "Temp", since(today.minusYears(years).minusDays(5)), until(today.minusYears(years)));
+					
+					double tempReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,1,0.0d)).doubleValue();
+					double maxReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,2,0.0d)).doubleValue();
+	            	double minReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,3,0.0d)).doubleValue();
+					
+	            	double resemblance = Math.abs((tempReference - LastTemperature) + (maxReference - lastMaximum) + (minReference - lastMinimum));
+	            	
+	            	if (resemblance < closestResemblance) {
+	            		closestResemblance = resemblance;
+	            		referenceYear = reference;
+	            	}
+				}
+	
+	            //take the closest temperature reference to the current
+	
+	            double TemperatureDelta = lastMaximum - lastMinimum;
+	            lowerMultiplier = (TemperatureDelta+0.05557039)/3.368699;
+	            higherAdder = lastMaximum - temperatureRegression(lowerMultiplier,0,15.0);
+
+	            // calculate the regression
+	            return temperatureRegression(lowerMultiplier, higherAdder, time.getHourOfDay()+ (time.getMinuteOfHour() / 60.0d));
+            }
+    		
+    	}
+    	
+        /* At the beginning of the day recalculate the factors of the day
+         */ 
+        if (currentDay == null || currentDay.getDayOfYear() != time.getDayOfYear()) {
+
+			double maxReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(referenceYear,2,0.0d)).doubleValue();
+        	double minReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(referenceYear,3,0.0d)).doubleValue();
+
+            double TemperatureDelta = maxReference - minReference;
+            lowerMultiplier = (TemperatureDelta+0.05557039)/3.368699;
+            higherAdder = maxReference - temperatureRegression(lowerMultiplier,0,15.0);
+
+        }
+        
+
+        // calculate the regression
+        return temperatureRegression(lowerMultiplier, higherAdder, time.getHourOfDay()+ (time.getMinuteOfHour() / 60.0d));
+        
+    }
+
+    /**
+     * a simple regression curve for the temperature
+     */
+    private double temperatureRegression(double lowerMultiplier, double higherAdder, double hourOfDay) {
+
+       // List<Object> maxResult = externalTemperature(MAX, "time=")
+        return 8.190593 +higherAdder+ 0.2831266*hourOfDay*lowerMultiplier - 0.3401877*Math.pow(hourOfDay,2)*lowerMultiplier + 0.05460142*Math.pow(hourOfDay,3) *lowerMultiplier- 0.003024781*Math.pow(hourOfDay,4)*lowerMultiplier + 0.00005486382*Math.pow(hourOfDay,5)*lowerMultiplier;
+    }
 
 }

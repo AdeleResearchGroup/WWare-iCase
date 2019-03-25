@@ -14,6 +14,7 @@ import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 import org.influxdb.dto.QueryResult.Result;
 import org.influxdb.dto.QueryResult.Series;
+import org.joda.time.DateTime;
 
 /**
  * A utility class to access the influx database line protocol
@@ -104,7 +105,12 @@ public class Database {
 	public static String quoted(String value) {
 		return quoted(value,false);
 	}
-	
+
+	public static String unquoted(String value) {
+		value = value.trim();
+		return value.substring(1,value.length()-1);
+	}
+
 	public static String quoted(String value, boolean single) {
 		StringBuilder quoted 	= new StringBuilder();
 		char quote			 	= single ? '\'' : '"'; 
@@ -140,7 +146,7 @@ public class Database {
 	 * 
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T valueAt(QueryResult result, int row, int column, T orElse) {
+	public static <T> T measure(QueryResult result, int row, int column, T orElse) {
 		
 		List<List<Object>> values = values(result);
 		
@@ -157,12 +163,28 @@ public class Database {
 		return  (T) rowValue.get(column);
 	}
 
-	public static <T> T valueAt(QueryResult result, int row, int column) {
-		return valueAt(result, row, column, null);
+	public static <T> T measure(QueryResult result, int column, T orElse) {
+		return measure(result, 0, column, orElse);
 	}
 	
-	public static String timestamp(List<Object> row) {
-		return row != null && ! row.isEmpty() ? (String) first(row) : null;
+	public static <T> T measure(QueryResult result, int row, int column) {
+		return measure(result, row, column, null);
+	}
+
+	public static <T> T measure(QueryResult result, int column) {
+		return measure(result, 0, column, null);
+	}
+
+	public static String timestamp(QueryResult result, int row) {
+		return measure(result, row, 0, null);
+	}
+
+	public static String timestamp(QueryResult result) {
+		return measure(result, 0, 0, null);
+	}
+	
+	public static DateTime asDate(String timestamp) {
+		return timestamp != null ? new DateTime(TimeUnit.MILLISECONDS.convert(Long.valueOf(unquoted(timestamp)), TimeUnit.NANOSECONDS)) : null;
 	}
 
 	public static <E> E first(List<E> list) {
@@ -360,16 +382,29 @@ public class Database {
 	}
 	
 	public static String since(long time, TimeUnit unit) {
-		return where("time", ">", TimeUnit.NANOSECONDS.convert(time,unit));
+		return since(expression(time(time,unit)));
 	}
 
 	public static String until(long time, TimeUnit unit) {
-		return where("time", "<", TimeUnit.NANOSECONDS.convert(time,unit));
+		return until(expression(time(time,unit)));
 	}
 
 	public static String atTime(long time, TimeUnit unit) {
-		return where("time", "=", TimeUnit.NANOSECONDS.convert(time,unit));
+		return atTime(expression(time(time,unit)));
 	}
+
+	public static String since(DateTime time) {
+		return since(expression(time(time)));
+	}
+
+	public static String until(DateTime time) {
+		return until(expression(time(time)));
+	}
+
+	public static String atTime(DateTime time) {
+		return atTime(expression(time(time)));
+	}
+
 
 	public static String since(String timestamp) {
 		return where("time", ">", timestamp);
@@ -401,13 +436,18 @@ public class Database {
 		return weeks+"w";
 	}
 
+	public static String time(DateTime time) {
+		return time(time.getMillis(), TimeUnit.MILLISECONDS);
+	}
+	
 	public static String time(long time, TimeUnit unit) {
-		return time+suffix(unit);
+		return Long.toString(time)+suffix(unit);
 	}
 
 	public static String time(String timestamp) {
 		return quoted(timestamp,true);
 	}
+
 
 	private static String suffix(TimeUnit unit) {
 		switch (unit) {

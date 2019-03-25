@@ -150,7 +150,7 @@ public class AutonomicManager implements PeriodicRunnable {
     String commandScope;
 
     @ServiceProperty(name = "osgi.command.function", value = "{}")
-    String[] m_function = new String[] {"setReference"};
+    String[] m_function = new String[] {"setReference","reset"};
 
     @Descriptor("Set the reference temperature for a zone")
     public void setReference(@Descriptor("zone") String zone, @Descriptor("reference") String reference) {
@@ -164,7 +164,12 @@ public class AutonomicManager implements PeriodicRunnable {
 		
     	state.setReference(Quantities.getQuantity(Double.valueOf(reference),Units.KELVIN));
     }
-    
+
+    @Descriptor("Reset state")
+    public void reset() {
+    	this.lookupRequested = false;
+    }
+
     /**
      * We keep track of the zones in the home and create a new controller for each zone with at least
      * one heater
