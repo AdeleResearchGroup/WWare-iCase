@@ -105,18 +105,16 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.influxdb</groupId>
-			<artifactId>influxdb-java</artifactId>
-			<version>2.14</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
-		
-		<dependency>
 			<groupId>org.wisdom-framework</groupId>
 			<artifactId>wisdom-api</artifactId>
 		</dependency>
-    
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>learning.integration.influxdb</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>    
+		
 	</dependencies>
 
 
@@ -162,9 +160,7 @@
 							${project.artifactId}
 						</Bundle-SymbolicName>
 						<Include-Resource>{maven-resources}</Include-Resource>
-						<Embed-Dependency>influxdb-java,groupId=com.squareup.*,groupId=org.msgpack.*</Embed-Dependency>
-						<Embed-Transitive>true</Embed-Transitive>
-						<Import-Package>!android.*,!kotlin.*,!*.conscrypt.*,!javax.annotation.*,*</Import-Package>
+						<Export-Package>fr.liglab.adele.interop.services.*</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>

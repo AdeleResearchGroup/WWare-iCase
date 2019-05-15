@@ -96,13 +96,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>fr.liglab.adele.icasa</groupId>
-			<artifactId>iop-demonstrator</artifactId>
-			<version>${project.version}</version>
-			<type>bundle</type>
-		</dependency>
-
-		<dependency>
 		    <groupId>org.apache.commons</groupId>
 		    <artifactId>commons-collections4</artifactId>
 		    <version>4.1</version>
@@ -115,6 +108,23 @@
 		    <version>1.1.6</version>
 		    <scope>runtime</scope>
 		</dependency>
+
+		<!--Learning -->
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>learning.integration.influxdb</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>    
+
+		<!--Application -->
+
+		<dependency>
+			<groupId>fr.liglab.adele.icasa</groupId>
+			<artifactId>iop-demonstrator</artifactId>
+			<version>${project.version}</version>
+			<type>bundle</type>
+		</dependency>
+
 		
 	</dependencies>
 

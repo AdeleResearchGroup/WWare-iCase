@@ -20,9 +20,10 @@ import org.apache.felix.ipojo.configuration.Instance;
 
 import fr.liglab.adele.interop.demonstrator.applications.ApplicationManager;
 import fr.liglab.adele.interop.demonstrator.applications.temperature.AutonomicManager;
-
+import fr.liglab.adele.interop.demonstrator.applications.temperature.TemperatureOpenControllerApplication;
 import fr.liglab.adele.interop.iop.publisher.LocatedObjectPublisher;
 import fr.liglab.adele.interop.time.series.MeasurementStorage;
+import fr.liglab.adele.time.series.influxdb.InfluxSeriesDatabase;
 
 import static org.apache.felix.ipojo.configuration.Instance.instance;
 
@@ -36,13 +37,25 @@ public class Setup {
     Instance specialManager = instance().named("Interop-TemperatureApplicationManager")
             .of(AutonomicManager.class.getCanonicalName());
 
-    /*
-     * TODO FIX ERROR WHEN EXPORTING HEATER 
-     *
 	Instance icasaPublisher = instance().named("iCasaPublisher")
             .of(LocatedObjectPublisher.class.getCanonicalName());
-	*/
-    Instance measurementStrorage = instance().named("TimeSeriesStorage")
+
+	Instance measurementStrorage = instance().named("MeasurementStorage")
             .of(MeasurementStorage.class.getCanonicalName());
+
+	Instance measurementDatabase = instance().named("MeasurementDatabase")
+            .of(InfluxSeriesDatabase.class.getCanonicalName())
+            .with("name").setto(MeasurementStorage.DATABASE_NAME)
+            .with("server").setto("http://localhost:8086")
+            .with("user").setto("root")
+            .with("password").setto("root");
+
+	Instance learningtDatabase = instance().named("LearningDatabase")
+            .of(InfluxSeriesDatabase.class.getCanonicalName())
+            .with("name").setto(TemperatureOpenControllerApplication.DATABASE_NAME)
+            .with("server").setto("http://localhost:8086")
+            .with("user").setto("root")
+            .with("password").setto("root");
+
 
 }

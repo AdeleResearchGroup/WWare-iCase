@@ -15,7 +15,9 @@ import org.apache.felix.ipojo.annotations.Validate;
 
 import fr.liglab.adele.interop.services.shutter.ShutterController;
 import fr.liglab.adele.interop.services.temperature.TemperatureController;
-import fr.liglab.adele.interop.time.series.influx.Database;
+
+import fr.liglab.adele.time.series.SeriesDatabase;
+import static fr.liglab.adele.time.series.SeriesDatabase.*;
 
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
@@ -23,7 +25,6 @@ import org.influxdb.dto.QueryResult;
 
 import static org.influxdb.dto.BatchPoints.*;
 import static org.influxdb.dto.Point.*;
-import static fr.liglab.adele.interop.time.series.influx.Database.*;
 
 import fr.liglab.adele.icasa.clockservice.Clock;
 import fr.liglab.adele.icasa.service.scheduler.PeriodicRunnable;
@@ -50,8 +51,16 @@ import fr.liglab.adele.icasa.layering.services.location.ZoneService;
 @Provides(specifications = {MeasurementStorage.class, PeriodicRunnable.class})
 public class MeasurementStorage implements PeriodicRunnable {
 
-	@Requires
+	
+
+	@Requires(optional=false, proxy=false)
 	Clock clock;
+
+
+	@Requires(optional=false, proxy=false, filter="(name="+DATABASE_NAME+")")
+	private SeriesDatabase database;
+
+	public static final String DATABASE_NAME = "test";
 
 	/**
 	 * The public series stored in this service
@@ -104,12 +113,6 @@ public class MeasurementStorage implements PeriodicRunnable {
 		
 	}
 	
-
-
-
-	private static final String DATABASE_NAME = "test";
-	
-	private final Database database = new Database(DATABASE_NAME);
 	
 	private Long previousRun = null;
 	
@@ -285,7 +288,7 @@ public class MeasurementStorage implements PeriodicRunnable {
 		return "none";
 	}
 
-	private static String zoneOf	(ServiceLayer service) {
+	private static String zoneOf(ServiceLayer service) {
 
 		if (service instanceof ZoneService) {
 			return ((ZoneService) service).getZone();
@@ -301,7 +304,7 @@ public class MeasurementStorage implements PeriodicRunnable {
         return database.select("value",measure.label, limit, filters);
 	}
 
-	public QueryResult select(Measurement measure, Database.Function function, int limit, String ...filters) {
+	public QueryResult select(Measurement measure, SeriesDatabase.Function function, int limit, String ...filters) {
         return database.select(function.of("value"), measure.label, limit, filters);
 	}
 
@@ -309,7 +312,7 @@ public class MeasurementStorage implements PeriodicRunnable {
         return database.select("value",measure.label, filters);
 	}
 
-	public QueryResult select(Measurement measure, Database.Function function, String ...filters) {
+	public QueryResult select(Measurement measure, SeriesDatabase.Function function, String ...filters) {
         return database.select(function.of("value"), measure.label, filters);
 	}
 

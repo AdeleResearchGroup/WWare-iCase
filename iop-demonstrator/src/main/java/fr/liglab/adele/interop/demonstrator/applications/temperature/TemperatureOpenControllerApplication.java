@@ -28,9 +28,9 @@ import fr.liglab.adele.interop.services.temperature.TemperatureController;
 import fr.liglab.adele.interop.time.series.MeasurementStorage;
 import static fr.liglab.adele.interop.time.series.MeasurementStorage.Measurement.*;
 
-import fr.liglab.adele.interop.time.series.influx.Database;
-import static fr.liglab.adele.interop.time.series.influx.Database.*;
-import static fr.liglab.adele.interop.time.series.influx.Database.Function.*;
+import fr.liglab.adele.time.series.SeriesDatabase;
+import static fr.liglab.adele.time.series.SeriesDatabase.*;
+import static fr.liglab.adele.time.series.SeriesDatabase.Function.*;
 
 import org.influxdb.dto.QueryResult;
 import org.joda.time.DateTime;
@@ -41,8 +41,9 @@ import fr.liglab.adele.icasa.clockservice.Clock;
 
 import fr.liglab.adele.icasa.device.temperature.Heater;
 import fr.liglab.adele.icasa.device.temperature.Thermometer;
-import fr.liglab.adele.iop.device.api.IOPService;
 import fr.liglab.adele.icasa.device.temperature.ThermometerExt;
+
+import fr.liglab.adele.iop.device.api.IOPService;
 
 @ContextEntity(coreServices = {ApplicationLayer.class, TemperatureController.class, PeriodicRunnable.class})
 
@@ -258,10 +259,13 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     /**
      * Learning algorithm
      */
-    @Requires(optional = false, proxy=false)
+    @Requires(optional=false, proxy=false)
     private MeasurementStorage storage;
     
-    private final Database historicData = new Database("mLearning");
+	public static final String DATABASE_NAME = "mLearning";
+
+	@Requires(optional=false, proxy=false, filter="(name="+DATABASE_NAME+")")
+    private SeriesDatabase historicData;
 
     private QueryResult referenceYear = null;
     private double lowerMultiplier = 1;
@@ -281,7 +285,7 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     		
             //get the date from the latest available temperature
             QueryResult lastMeasured 	= storage.select(TEMPERATURE, LAST, since(today.minusYears(5)), until(today));
-            String timeOfLastMeasure	= timestamp(lastMeasured);
+            DateTime timeOfLastMeasure	= asDate(timestamp(lastMeasured));
             
             if (timeOfLastMeasure != null) {
             	
@@ -290,8 +294,8 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
 	
 	
 	            //With that date, get the max and min temperatures in the day
-	            QueryResult lastMin = storage.select(TEMPERATURE, MIN, since(timeOfLastMeasure), until(expression(time(timeOfLastMeasure),"+",time(1,TimeUnit.DAYS))));
-	            QueryResult lastMax = storage.select(TEMPERATURE, MAX, since(timeOfLastMeasure), until(expression(time(timeOfLastMeasure),"+",time(1,TimeUnit.DAYS))));
+	            QueryResult lastMin = storage.select(TEMPERATURE, MIN, since(timeOfLastMeasure), until(timeOfLastMeasure.plusDays(1)));
+	            QueryResult lastMax = storage.select(TEMPERATURE, MAX, since(timeOfLastMeasure), until(timeOfLastMeasure.plusDays(1)));
 	            
 	            double lastMaximum = measure(lastMax, 1, 0.0d);
 	            double lastMinimum = measure(lastMin, 1, 0.0d);
@@ -304,9 +308,9 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
 	            for (int years = 1; years < 5; years++) {
 	            	QueryResult reference = historicData.select(MEAN.of("*"), "Temp", since(today.minusYears(years).minusDays(5)), until(today.minusYears(years)));
 					
-					double tempReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,1,0.0d)).doubleValue();
-					double maxReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,2,0.0d)).doubleValue();
-	            	double minReference = Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,3,0.0d)).doubleValue();
+					double tempReference	= Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,1,0.0d)).doubleValue();
+					double maxReference 	= Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,2,0.0d)).doubleValue();
+	            	double minReference		= Units.CELSIUS.getConverterTo(Units.KELVIN).convert(measure(reference,3,0.0d)).doubleValue();
 					
 	            	double resemblance = Math.abs((tempReference - LastTemperature) + (maxReference - lastMaximum) + (minReference - lastMinimum));
 	            	
