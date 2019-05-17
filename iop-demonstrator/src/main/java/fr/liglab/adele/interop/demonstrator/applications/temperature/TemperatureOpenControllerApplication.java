@@ -110,22 +110,16 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     	double external = reference;
     	
     	if (outside != null) {
-//            System.err.printf("Target\tOutside\tOutput\tError\n");
     		external = outside.getTemperature().getValue().doubleValue();
     	} else if (building != null) {
-//            System.err.printf("Target\tBuilding\tOutput\tError\n");
     		external = building.getTemperature().getValue().doubleValue();
     	}
     	else {
-//            System.err.printf("Target\tHistorical\tOutput\tError\n");
             external = getRecordedTemperature(time);
-            return;
     	}
     	
     	
         double output = estimate(external, reference, time);
-        
-//      System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f %s \n", reference, external, output, (reference-external), output > 0 &&  Math.signum(reference-external) < 0 ? "****" : "");
         
         double level = output / heaters.length;
 		for (Heater	heater : heaters) {
@@ -285,7 +279,7 @@ public class TemperatureOpenControllerApplication implements ApplicationLayer, T
     		
             //get the date from the latest available temperature
             QueryResult lastMeasured 	= storage.select(TEMPERATURE, LAST, since(today.minusYears(5)), until(today));
-            DateTime timeOfLastMeasure	= asDate(timestamp(lastMeasured));
+            DateTime timeOfLastMeasure	= instant(timestamp(lastMeasured));
             
             if (timeOfLastMeasure != null) {
             	

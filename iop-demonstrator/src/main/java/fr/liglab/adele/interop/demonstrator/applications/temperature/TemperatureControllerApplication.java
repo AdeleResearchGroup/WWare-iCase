@@ -102,12 +102,8 @@ public class TemperatureControllerApplication implements ApplicationLayer, Tempe
     
     private void control() {
     	
-    	double reference	= this.reference.getValue().doubleValue();
         double actual 		= thermometer.getTemperature().to(Units.KELVIN).getValue().doubleValue();
         double output 		= pid.getOutput(actual);
-        
-//        System.err.printf("Target\tActual\tOutput\tError\n");
-//        System.err.printf("%3.2f\t%3.2f\t%3.2f\t%3.2f %s\n", reference, actual, output, (reference-actual), output > 0 &&  Math.signum(reference-actual) < 0 ? "****" : "");
         
         double level		= output / heaters.length;
 		for (Heater	heater : heaters) {
